@@ -1,0 +1,72 @@
+import bcrypt from 'bcryptjs';
+import { UserRepository } from './user.repository';
+import { signToken } from '../../lib/jwt';
+
+export class AuthService {
+  static async register(email: string, password: string, name: string, role?: string) {
+    const existing = await UserRepository.findByEmail(email);
+    if (existing) {
+      throw new Error('Email already registered');
+    }
+
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt);
+
+    const user = await UserRepository.create({
+      email,
+      passwordHash: hash,
+      name,
+      role,
+    });
+
+    const token = await signToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    });
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+      },
+    };
+  }
+
+  static async login(email: string, password: string) {
+    const user = await UserRepository.findByEmail(email);
+    if (!user) {
+      throw new Error('Invalid email or password');
+    }
+
+    if (!user.isActive) {
+      throw new Error('Account deactivated. Please contact administrator.');
+    }
+
+    const matched = bcrypt.compareSync(password, user.passwordHash);
+    if (!matched) {
+      throw new Error('Invalid email or password');
+    }
+
+    const token = await signToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    });
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+      },
+    };
+  }
+}

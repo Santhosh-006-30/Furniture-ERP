@@ -1,0 +1,307 @@
+datasource db {
+  url      = env("DATABASE_URL")
+
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+  binaryTargets   = ["native"]
+}
+
+// Enums replaced with String fields for SQLite compatibility.
+// Logical values remain PostgreSQL-compatible.
+
+// Role: ADMIN, SALES, PURCHASE, MANUFACTURING, INVENTORY, OWNER, CUSTOMER
+// OrderStatus: DRAFT, CONFIRMED, PARTIALLY_DELIVERED, FULLY_DELIVERED, CANCELLED
+// PurchaseStatus: DRAFT, CONFIRMED, PARTIALLY_RECEIVED, FULLY_RECEIVED
+// MoStatus: DRAFT, CONFIRMED, IN_PROGRESS, DONE, CANCELLED
+// WoStatus: PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+// StockLedgerType: PURCHASE_RECEIPT, SALES_DELIVERY, MANUFACTURING_CONSUMPTION, MANUFACTURING_OUTPUT, STOCK_TRANSFER, STOCK_ADJUSTMENT
+// ProcurementRequestStatus: PENDING, APPROVED, ORDERED, CANCELLED
+// ProcurementStrategy: MTS, MTO
+// ProcurementType: PURCHASE, MANUFACTURING
+// Category: RAW_MATERIAL, COMPONENT, FINISHED_GOOD
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String
+  name          String
+  role          String     @default("SALES")
+  isActive      Boolean    @default(true)
+  permissions   String     @default("[]")
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Product {
+  id                  String              @id @default(uuid())
+  sku                 String              @unique
+  name                String
+  category            String              @default("RAW_MATERIAL")
+  sellingPrice        Float
+  costPrice           Float
+  stockQty            Float               @default(0.0)
+  reservedQty         Float               @default(0.0)
+  damagedQty          Float               @default(0.0)
+  procurementStrategy String              @default("MTO")
+  procurementType     String              @default("PURCHASE")
+  procureOnDemand     Boolean             @default(false)
+  reorderLevel        Float               @default(5.0)
+  preferredVendorId   String?
+  preferredVendor     Vendor?             @relation(fields: [preferredVendorId], references: [id])
+  
+  bomComponents       BoMComponent[]      @relation("componentProduct")
+  finishedBoms        BillOfMaterials[]   @relation("yieldProduct")
+  salesItems          SalesOrderItem[]
+  purchaseItems       PurchaseOrderItem[]
+  ledgerEntries       StockLedger[]
+  manufacturingOrders ManufacturingOrder[]
+  procurementRequests ProcurementRequest[]
+  stockReservations   StockReservation[]
+
+  @@map("products")
+}
+
+model Vendor {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  phone          String?
+  address        String?
+  rating         Float           @default(5.0)
+  leadTimeDays   Int             @default(3)
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("vendors")
+}
+
+model Customer {
+  id             String       @id @default(uuid())
+  customerCode   String       @unique
+  name           String
+  email          String       @unique
+  phone          String?
+  address        String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  salesOrders    SalesOrder[]
+
+  @@map("customers")
+}
+
+model SalesOrder {
+  id                String             @id @default(uuid())
+  orderNumber       String             @unique
+  customerId        String
+  customer          Customer           @relation(fields: [customerId], references: [id])
+  status            String             @default("DRAFT")
+  createdAt         DateTime           @default(now())
+  items             SalesOrderItem[]
+  stockReservations StockReservation[]
+
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id           String     @id @default(uuid())
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  quantity     Float
+  unitPrice    Float
+  reservedQty  Float      @default(0.0)
+  deliveredQty Float      @default(0.0)
+
+  @@map("sales_order_items")
+}
+
+model PurchaseOrder {
+  id                  String               @id @default(uuid())
+  orderNumber         String               @unique
+  vendorId            String
+  vendor              Vendor               @relation(fields: [vendorId], references: [id])
+  status              String               @default("DRAFT")
+  createdAt           DateTime             @default(now())
+  items               PurchaseOrderItem[]
+  procurementRequests ProcurementRequest[]
+  procurementRequestId String?
+  procurementRequest   ProcurementRequest? @relation("POProcurement", fields: [procurementRequestId], references: [id])
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Float
+  unitPrice       Float
+  receivedQty     Float         @default(0.0)
+
+  @@map("purchase_order_items")
+}
+
+model BillOfMaterials {
+  id                  String               @id @default(uuid())
+  name                String
+  productId           String
+  product             Product              @relation("yieldProduct", fields: [productId], references: [id])
+  version             Int                  @default(1)
+  isActive            Boolean              @default(true)
+  yieldQty            Float                @default(1.0)
+  estimatedCost       Float                @default(0.0)
+  components          BoMComponent[]
+  manufacturingOrders ManufacturingOrder[]
+  routingSteps        RoutingStep[]
+
+  @@map("bom")
+}
+
+model BoMComponent {
+  id        String          @id @default(uuid())
+  bomId     String
+  bom       BillOfMaterials @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product         @relation("componentProduct", fields: [productId], references: [id])
+  quantity  Float
+
+  @@map("bom_components")
+}
+
+model WorkCenter {
+  id             String        @id @default(uuid())
+  name           String        @unique
+  location       String        @default("Main Factory")
+  capacity       Float
+  efficiencyRate Float         @default(1.0)
+  hourlyCost     Float
+  setupCost      Float         @default(0.0)
+  status         String        @default("RUNNING") // RUNNING, DELAYED, CRITICAL
+  workOrders     WorkOrder[]
+  routingSteps   RoutingStep[]
+
+  @@map("work_centers")
+}
+
+model ManufacturingOrder {
+  id                  String               @id @default(uuid())
+  moNumber            String               @unique
+  productId           String
+  product             Product              @relation(fields: [productId], references: [id])
+  quantity            Float
+  bomId               String
+  bom                 BillOfMaterials      @relation(fields: [bomId], references: [id])
+  operator            String               @default("System Orchestrator")
+  status              String               @default("DRAFT")
+  producedQty         Float                @default(0.0)
+  scrapQty            Float                @default(0.0)
+  createdAt           DateTime             @default(now())
+  workOrders          WorkOrder[]
+  procurementRequests ProcurementRequest[]
+  stockReservations   StockReservation[]
+
+  @@map("manufacturing_orders")
+}
+
+model WorkOrder {
+  id                   String             @id @default(uuid())
+  woNumber             String             @unique
+  manufacturingOrderId String
+  manufacturingOrder   ManufacturingOrder @relation(fields: [manufacturingOrderId], references: [id], onDelete: Cascade)
+  workCenterId         String
+  workCenter           WorkCenter         @relation(fields: [workCenterId], references: [id])
+  operationName        String
+  durationMinutes      Float
+  status               String             @default("PENDING")
+  startedAt            DateTime?
+  completedAt          DateTime?
+
+  @@map("work_orders")
+}
+
+model StockLedger {
+  id             String   @id @default(uuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  quantityBefore Float
+  quantityChange Float
+  quantityAfter  Float
+  type           String
+  sourceDocument String
+  referenceType  String
+  referenceId    String
+  performedBy    String
+  timestamp      DateTime @default(now())
+
+  @@map("stock_ledger")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  userName  String   @default("System")
+  action    String
+  entity    String
+  oldValues String? // Stored as JSON stringified for SQLite fallback compat
+  newValues String? // Stored as JSON stringified for SQLite fallback compat
+  timestamp DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model RoutingStep {
+  id              String          @id @default(uuid())
+  bomId           String
+  bom             BillOfMaterials @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  workCenterId    String
+  workCenter      WorkCenter      @relation(fields: [workCenterId], references: [id])
+  operationName   String
+  sequence        Int             @default(1)
+  durationMinutes Float           @default(30.0)
+  description     String?
+
+  @@map("routing_steps")
+}
+
+model StockReservation {
+  id                   String              @id @default(uuid())
+  productId            String
+  product              Product             @relation(fields: [productId], references: [id])
+  quantity             Float
+  salesOrderId         String?
+  salesOrder           SalesOrder?         @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  manufacturingOrderId String?
+  manufacturingOrder   ManufacturingOrder? @relation(fields: [manufacturingOrderId], references: [id], onDelete: Cascade)
+  status               String              @default("RESERVED") // RESERVED, RELEASED, FULFILLED
+  createdAt            DateTime            @default(now())
+
+  @@map("stock_reservations")
+}
+
+model ProcurementRequest {
+  id                     String              @id @default(uuid())
+  productId              String
+  product                Product             @relation(fields: [productId], references: [id])
+  quantity               Float
+  type                   String              // "MTO", "MTS", "REORDER"
+  status                 String              @default("PENDING") // PENDING, APPROVED, ORDERED, CANCELLED
+  sourceDocument         String              // e.g. "SO-001", "REORDER-SKU"
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  purchaseOrderId        String?
+  purchaseOrder          PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  manufacturingOrderId   String?
+  manufacturingOrder     ManufacturingOrder? @relation(fields: [manufacturingOrderId], references: [id])
+  purchaseOrders         PurchaseOrder[]     @relation("POProcurement")
+
+  @@map("procurement_requests")
+}
