@@ -9,7 +9,21 @@ export async function GET(req: Request) {
 
   try {
     const list = await SalesRepository.listCustomers();
-    return NextResponse.json(list);
+    const enriched = list.map((customer) => {
+      const revenue = customer.salesOrders.reduce((sum, order) => {
+        const orderTotal = order.items.reduce((orderSum, item) => orderSum + item.unitPrice * item.quantity, 0);
+        return sum + orderTotal;
+      }, 0);
+
+      return {
+        ...customer,
+        ordersCount: customer.salesOrders.length,
+        revenue,
+        status: customer.isActive ? 'ACTIVE' : 'INACTIVE',
+      };
+    });
+
+    return NextResponse.json(enriched);
   } catch (error: any) {
     logger.error({ error: error.message }, 'Failed to list customers');
     return NextResponse.json({ error: 'Failed to retrieve customers' }, { status: 500 });
@@ -31,6 +45,9 @@ export async function POST(req: Request) {
       email: body.email,
       phone: body.phone,
       address: body.address,
+      companyName: body.companyName,
+      gstNumber: body.gstNumber,
+      isActive: body.isActive,
     });
 
     logger.info({ customerId: customer.id, createdBy: user?.email }, 'New customer registered');

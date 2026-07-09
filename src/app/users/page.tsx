@@ -231,9 +231,11 @@ export default function UsersPage() {
   const filteredUsers = usersList.filter(
     (u) => {
       const matchesSearch =
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase()) ||
-        u.role.toLowerCase().includes(search.toLowerCase());
+        u.role !== 'CUSTOMER' && (
+          u.name.toLowerCase().includes(search.toLowerCase()) ||
+          u.email.toLowerCase().includes(search.toLowerCase()) ||
+          u.role.toLowerCase().includes(search.toLowerCase())
+        );
       
       const matchesApproval =
         filterApproval === 'ALL' || u.approvalStatus === filterApproval;
@@ -390,7 +392,6 @@ export default function UsersPage() {
                         <option value="MANUFACTURING">MFG</option>
                         <option value="INVENTORY">INVENTORY</option>
                         <option value="OWNER">OWNER</option>
-                        <option value="CUSTOMER">CUSTOMER</option>
                       </select>
                     </td>
 

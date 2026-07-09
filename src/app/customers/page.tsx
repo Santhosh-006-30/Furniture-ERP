@@ -7,7 +7,6 @@ import {
   Users,
   Plus,
   Search,
-  Info,
   Loader2,
   UserCheck,
   UserX,
@@ -15,6 +14,12 @@ import {
   Phone,
   MapPin,
   Hash,
+  Building2,
+  BadgeCheck,
+  DollarSign,
+  CalendarDays,
+  Filter,
+  ArrowUpDown,
 } from 'lucide-react';
 
 export default function CustomersPage() {
@@ -22,6 +27,11 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [sortField, setSortField] = useState<'name' | 'createdAt' | 'revenue' | 'ordersCount'>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
 
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -33,6 +43,8 @@ export default function CustomersPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
   const [isActive, setIsActive] = useState(true);
 
   const canManage = user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'SALES';
@@ -53,12 +65,18 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, sortField, sortDirection]);
+
   const resetForm = () => {
     setCustomerCode('');
     setName('');
     setEmail('');
     setPhone('');
     setAddress('');
+    setCompanyName('');
+    setGstNumber('');
     setIsActive(true);
   };
 
@@ -70,6 +88,8 @@ export default function CustomersPage() {
     setEmail(c.email);
     setPhone(c.phone || '');
     setAddress(c.address || '');
+    setCompanyName(c.companyName || '');
+    setGstNumber(c.gstNumber || '');
     setIsActive(c.isActive);
   };
 
@@ -83,7 +103,7 @@ export default function CustomersPage() {
     e.preventDefault();
     try {
       setSaving(true);
-      const payload = { customerCode, name, email, phone, address, isActive };
+      const payload = { customerCode, name, email, phone, address, companyName, gstNumber, isActive };
       if (isCreating) {
         await api.post('/customers', payload);
         alert('Customer registered successfully!');
@@ -118,11 +138,33 @@ export default function CustomersPage() {
     }
   };
 
-  const filteredCustomers = customers.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.customerCode.toLowerCase().includes(search.toLowerCase()) ||
-    (c.email || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCustomers = customers
+    .filter((c) => {
+      const matchesSearch =
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.customerCode.toLowerCase().includes(search.toLowerCase()) ||
+        (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.companyName || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.phone || '').toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === 'ALL' || (c.isActive ? 'ACTIVE' : 'INACTIVE') === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      if (sortField === 'revenue') {
+        return (a.revenue - b.revenue) * direction;
+      }
+      if (sortField === 'ordersCount') {
+        return (a.ordersCount - b.ordersCount) * direction;
+      }
+      if (sortField === 'name') {
+        return a.name.localeCompare(b.name) * direction;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+  const pagedCustomers = filteredCustomers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (loading) {
     return (
@@ -141,10 +183,10 @@ export default function CustomersPage() {
       <div className="flex justify-between items-center border-b border-slate-800 pb-5">
         <div>
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
-            Customer Registry
+            Customer Management
           </h1>
           <p className="text-slate-400 mt-1 text-sm">
-            Manage buyer accounts, contact information, and order history linkages.
+            Manage customer accounts, company details, and business value across the ERP.
           </p>
         </div>
         {canManage && (
@@ -162,17 +204,48 @@ export default function CustomersPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left: Customer Table */}
         <div className="flex-1 space-y-4 min-w-0">
-          <div className="flex gap-4 max-w-md">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[240px] max-w-md">
               <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search by name, code, or email..."
+                placeholder="Search by name, code, email, or company..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full glass-input pl-10 pr-4 py-3 rounded-xl text-xs"
               />
             </div>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
+              <Filter className="w-4 h-4 text-slate-500" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
+                className="bg-transparent text-xs text-slate-300 outline-none"
+              >
+                <option value="ALL">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
+              <ArrowUpDown className="w-4 h-4 text-slate-500" />
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value as 'name' | 'createdAt' | 'revenue' | 'ordersCount')}
+                className="bg-transparent text-xs text-slate-300 outline-none"
+              >
+                <option value="createdAt">Newest</option>
+                <option value="name">Name</option>
+                <option value="revenue">Revenue</option>
+                <option value="ordersCount">Orders</option>
+              </select>
+            </div>
+            <button
+              onClick={() => setSortDirection((prev) => prev === 'asc' ? 'desc' : 'asc')}
+              className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs text-slate-300"
+            >
+              {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            </button>
           </div>
 
           <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800/80">
@@ -180,23 +253,28 @@ export default function CustomersPage() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-900/60 border-b border-slate-850 text-slate-400 uppercase tracking-widest font-mono">
+                    <th className="p-4 font-bold">ID</th>
                     <th className="p-4 font-bold">Code</th>
                     <th className="p-4 font-bold">Customer Name</th>
                     <th className="p-4 font-bold">Email</th>
                     <th className="p-4 font-bold">Phone</th>
-                    <th className="p-4 font-bold text-center">Status</th>
+                    <th className="p-4 font-bold">Company</th>
+                    <th className="p-4 font-bold">GST</th>
                     <th className="p-4 font-bold text-center">Orders</th>
+                    <th className="p-4 font-bold text-center">Revenue</th>
+                    <th className="p-4 font-bold text-center">Status</th>
+                    <th className="p-4 font-bold">Created</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-850">
                   {filteredCustomers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-slate-500 font-mono text-xs">
+                      <td colSpan={11} className="p-8 text-center text-slate-500 font-mono text-xs">
                         No customers found. Register your first customer using the button above.
                       </td>
                     </tr>
                   ) : (
-                    filteredCustomers.map((c) => {
+                    pagedCustomers.map((c) => {
                       const isSelected = selectedCustomer?.id === c.id;
                       return (
                         <tr
@@ -208,6 +286,7 @@ export default function CustomersPage() {
                               : 'hover:bg-slate-900/30'
                           }`}
                         >
+                          <td className="p-4 font-mono text-[11px] text-slate-400">{c.id?.slice(0, 8).toUpperCase()}</td>
                           <td className="p-4 font-mono font-bold text-slate-300">{c.customerCode}</td>
                           <td className="p-4">
                             <div className="flex items-center gap-2">
@@ -219,6 +298,14 @@ export default function CustomersPage() {
                           </td>
                           <td className="p-4 text-slate-400 font-mono text-[11px]">{c.email}</td>
                           <td className="p-4 text-slate-400 font-mono text-[11px]">{c.phone || '—'}</td>
+                          <td className="p-4 text-slate-400 font-mono text-[11px]">{c.companyName || '—'}</td>
+                          <td className="p-4 text-slate-400 font-mono text-[11px]">{c.gstNumber || '—'}</td>
+                          <td className="p-4 text-center font-mono font-semibold text-slate-400">
+                            {c.ordersCount ?? 0}
+                          </td>
+                          <td className="p-4 text-center font-mono font-semibold text-slate-300">
+                            ₹{Number(c.revenue || 0).toLocaleString('en-IN')}
+                          </td>
                           <td className="p-4 text-center">
                             <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wider border ${
                               c.isActive
@@ -228,8 +315,8 @@ export default function CustomersPage() {
                               {c.isActive ? 'ACTIVE' : 'INACTIVE'}
                             </span>
                           </td>
-                          <td className="p-4 text-center font-mono font-semibold text-slate-400">
-                            {c.salesOrders?.length ?? 0}
+                          <td className="p-4 text-slate-400 font-mono text-[11px]">
+                            {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
                           </td>
                         </tr>
                       );
@@ -237,6 +324,30 @@ export default function CustomersPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-800/80 bg-slate-950/40 px-4 py-3 text-[11px] text-slate-400">
+              <span>
+                Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredCustomers.length)} of {filteredCustomers.length} customers
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border border-slate-800 px-3 py-1 text-xs disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <span className="text-slate-300">Page {currentPage} / {totalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border border-slate-800 px-3 py-1 text-xs disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -317,6 +428,34 @@ export default function CustomersPage() {
                   />
                 </div>
 
+                {/* Company & GST */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xxs text-slate-400 font-bold uppercase tracking-wider font-mono flex items-center gap-1">
+                      <Building2 className="w-3 h-3" /> Company
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Shiv Furniture Works"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full glass-input px-3 py-2 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xxs text-slate-400 font-bold uppercase tracking-wider font-mono flex items-center gap-1">
+                      <BadgeCheck className="w-3 h-3" /> GST Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="27ABCDE1234F1Z5"
+                      value={gstNumber}
+                      onChange={(e) => setGstNumber(e.target.value)}
+                      className="w-full glass-input px-3 py-2 rounded-lg text-xs uppercase"
+                    />
+                  </div>
+                </div>
+
                 {/* Address */}
                 <div className="space-y-1.5">
                   <label className="text-xxs text-slate-400 font-bold uppercase tracking-wider font-mono flex items-center gap-1">
@@ -362,28 +501,44 @@ export default function CustomersPage() {
                   </div>
                 )}
 
-                {/* Order history (view only) */}
-                {!isCreating && selectedCustomer?.salesOrders?.length > 0 && (
-                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
-                    <span className="text-xxs text-slate-500 font-bold uppercase tracking-wider font-mono block">
-                      Recent Orders ({selectedCustomer.salesOrders.length})
-                    </span>
-                    <div className="max-h-28 overflow-y-auto space-y-1">
-                      {selectedCustomer.salesOrders.slice(0, 5).map((so: any) => (
-                        <div key={so.id} className="flex justify-between items-center px-2 py-1 bg-slate-900/60 rounded-lg text-[10px] font-mono">
-                          <span className="text-slate-300 font-bold">{so.orderNumber}</span>
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
-                            so.status === 'FULLY_DELIVERED'
-                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                              : so.status === 'CONFIRMED'
-                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                              : 'bg-slate-800 border-slate-700 text-slate-400'
-                          }`}>
-                            {so.status}
-                          </span>
-                        </div>
-                      ))}
+                {/* Business summary */}
+                {!isCreating && (
+                  <div className="pt-2 border-t border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2 text-[10px] font-mono">
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <CalendarDays className="w-3 h-3" /> Created
+                      </span>
+                      <span className="text-slate-200">{selectedCustomer?.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : '—'}</span>
                     </div>
+                    <div className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2 text-[10px] font-mono">
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <DollarSign className="w-3 h-3" /> Revenue
+                      </span>
+                      <span className="text-slate-200">₹{Number(selectedCustomer?.revenue || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    {!isCreating && selectedCustomer?.salesOrders?.length > 0 && (
+                      <div className="space-y-1.5">
+                        <span className="text-xxs text-slate-500 font-bold uppercase tracking-wider font-mono block">
+                          Recent Orders ({selectedCustomer.salesOrders.length})
+                        </span>
+                        <div className="max-h-28 overflow-y-auto space-y-1">
+                          {selectedCustomer.salesOrders.slice(0, 5).map((so: any) => (
+                            <div key={so.id} className="flex justify-between items-center px-2 py-1 bg-slate-900/60 rounded-lg text-[10px] font-mono">
+                              <span className="text-slate-300 font-bold">{so.orderNumber}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                so.status === 'FULLY_DELIVERED'
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                  : so.status === 'CONFIRMED'
+                                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                  : 'bg-slate-800 border-slate-700 text-slate-400'
+                              }`}>
+                                {so.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

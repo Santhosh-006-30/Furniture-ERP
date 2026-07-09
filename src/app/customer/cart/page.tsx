@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ShoppingCart, Trash2, ArrowLeft, ArrowRight, Loader2, AlertCircle, Calendar, ShieldAlert } from 'lucide-react';
-import api from '../../../lib/api-client';
 
 interface CartItem {
   productId: string;
@@ -92,30 +91,13 @@ export default function CustomerCartPage() {
     return subtotal >= 50000 ? 0 : 500;
   };
 
-  const handleCheckout = async () => {
-    setError('');
-    setCheckingOut(true);
-
-    try {
-      const payload = {
-        items: cartItems.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-        })),
-      };
-
-      const result = await api.post('/customer/checkout', payload);
-
-      // Clear local storage cart
-      saveCart([]);
-
-      // Redirect to Order Detail stub with success query
-      router.push(`/customer/orders/${result.orderId}?success=true`);
-    } catch (err: any) {
-      setError(err.message || 'Checkout request failed. Please try again.');
-    } finally {
-      setCheckingOut(false);
+  const handleProceedToCheckout = () => {
+    if (cartItems.length === 0) {
+      setError('Add at least one item to your cart before continuing to checkout.');
+      return;
     }
+
+    router.push('/customer/checkout');
   };
 
   if (loading) {
@@ -302,21 +284,11 @@ export default function CustomerCartPage() {
             )}
 
             <button
-              onClick={handleCheckout}
-              disabled={checkingOut}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 shadow-lg shadow-sky-500/15 transition-all cursor-pointer disabled:opacity-50"
+              onClick={handleProceedToCheckout}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 shadow-lg shadow-sky-500/15 transition-all cursor-pointer"
             >
-              {checkingOut ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Processing Checkout transaction...</span>
-                </>
-              ) : (
-                <>
-                  <span>Checkout Purchase Order</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
+              <span>Proceed to Checkout</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>

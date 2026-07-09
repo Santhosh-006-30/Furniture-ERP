@@ -37,6 +37,8 @@ export default function SalesPage() {
 
   // Form State for Dispatch deliveries
   const [dispatchQty, setDispatchQty] = useState<Record<string, string>>({});
+  const [tempCourier, setTempCourier] = useState('');
+  const [tempTrackingNum, setTempTrackingNum] = useState('');
 
   const isSalesStaff = user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'SALES';
 
@@ -57,6 +59,8 @@ export default function SalesPage() {
         const updatedSelected = ordersData.find((o: any) => o.id === selectedOrder.id);
         if (updatedSelected) {
           setSelectedOrder(updatedSelected);
+          setTempCourier(updatedSelected.courierName || '');
+          setTempTrackingNum(updatedSelected.trackingNumber || '');
         }
       }
     } catch (err) {
@@ -73,6 +77,8 @@ export default function SalesPage() {
   const handleSelectOrder = (o: any) => {
     setSelectedOrder(o);
     setIsCreating(false);
+    setTempCourier(o.courierName || '');
+    setTempTrackingNum(o.trackingNumber || '');
     
     // Clear dynamic dispatch form inputs
     const initialDispatch: Record<string, string> = {};
@@ -80,6 +86,23 @@ export default function SalesPage() {
       initialDispatch[item.id] = String(item.reservedQty); // Default to full reserved quantity
     });
     setDispatchQty(initialDispatch);
+  };
+
+  const handleUpdateTracking = async (status: string) => {
+    if (!selectedOrder) return;
+    try {
+      setLoading(true);
+      await api.put(`/sales/${selectedOrder.id}/tracking`, {
+        courierName: tempCourier.trim(),
+        trackingNumber: tempTrackingNum.trim(),
+        trackingStatus: status,
+      });
+      await fetchData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update tracking details');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStartCreate = () => {
@@ -583,6 +606,87 @@ export default function SalesPage() {
                       <span>Dispatch Delivery</span>
                     </button>
                   </form>
+                )}
+
+                {/* Shipment Tracking & Delivery Info update console */}
+                {selectedOrder.status !== 'DRAFT' && selectedOrder.status !== 'CANCELLED' && (
+                  <div className="space-y-4 pt-4 border-t border-slate-800">
+                    <span className="text-xxs text-slate-400 font-bold uppercase tracking-wider font-mono block">
+                      Shipment Tracking & Delivery Info
+                    </span>
+                    
+                    <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-xxs font-mono">
+                        <div>
+                          <span className="text-slate-500 block uppercase">Courier:</span>
+                          <span className="text-slate-200">{selectedOrder.courierName || 'Not Assigned'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block uppercase">Tracking Number:</span>
+                          <span className="text-slate-200">{selectedOrder.trackingNumber || 'Not Assigned'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block uppercase">Status:</span>
+                          <span className="inline-block mt-0.5 px-2 py-0.5 text-[9px] font-bold font-mono rounded bg-slate-900 border border-slate-800 text-sky-400 uppercase">
+                            {selectedOrder.trackingStatus || 'PENDING'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block uppercase">Estimated Delivery:</span>
+                          <span className="text-slate-200">{selectedOrder.estimatedDelivery || 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-slate-900">
+                        <div className="grid grid-cols-2 gap-2 text-xxs font-mono">
+                          <label className="space-y-1 block">
+                            <span className="text-slate-500 font-bold block">Courier Name</span>
+                            <input
+                              type="text"
+                              value={tempCourier}
+                              onChange={(e) => setTempCourier(e.target.value)}
+                              placeholder="e.g. BlueDart"
+                              className="w-full glass-input px-2 py-1 rounded text-slate-200"
+                            />
+                          </label>
+                          <label className="space-y-1 block">
+                            <span className="text-slate-500 font-bold block">Tracking Number</span>
+                            <input
+                              type="text"
+                              value={tempTrackingNum}
+                              onChange={(e) => setTempTrackingNum(e.target.value)}
+                              placeholder="e.g. AWD12345"
+                              className="w-full glass-input px-2 py-1 rounded text-slate-200"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTracking('SHIPPED')}
+                            className="flex-1 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/15 rounded text-[10px] font-bold cursor-pointer transition-colors"
+                          >
+                            Mark Dispatched
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTracking('DELIVERED')}
+                            className="flex-1 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/15 rounded text-[10px] font-bold cursor-pointer transition-colors"
+                          >
+                            Mark Delivered
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTracking('IN_TRANSIT')}
+                            className="px-2 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
+                          >
+                            Save Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (

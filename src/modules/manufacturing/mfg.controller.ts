@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { MfgService } from './mfg.service';
 import { authenticateRequest } from '../../lib/auth-middleware';
 import { logger } from '../../lib/pino';
+import { db } from '../../lib/db';
+import { EmailService } from '../../lib/email';
 
 export class MfgController {
   static async list(req: Request) {
@@ -81,6 +83,8 @@ export class MfgController {
 
     try {
       await MfgService.startWorkOrder(params.id, params.woId, user?.name || 'System Operator');
+      // Post-start notification trigger
+      await MfgController.notifyMfgStarted(params.id);
       return NextResponse.json({ success: true });
     } catch (error: any) {
       logger.error({ error: error.message, moId: params.id, woId: params.woId }, 'Failed to start work order operation');
@@ -107,10 +111,96 @@ export class MfgController {
       }
 
       await MfgService.completeWorkOrder(params.id, params.woId, user?.name || 'System Operator', partialData);
+      // Post-complete notification trigger
+      await MfgController.notifyMfgCompleted(params.id);
       return NextResponse.json({ success: true });
     } catch (error: any) {
       logger.error({ error: error.message, moId: params.id, woId: params.woId }, 'Failed to complete work order operation');
       return NextResponse.json({ error: error.message || 'Failed to complete work order operation' }, { status: 400 });
+    }
+  }
+
+  private static async notifyMfgStarted(moId: string) {
+    try {
+      const mo = await db.manufacturingOrder.findUnique({ where: { id: moId } });
+      if (!mo || mo.status !== 'IN_PROGRESS') return;
+
+      const pr = await db.procurementRequest.findFirst({
+        where: { manufacturingOrderId: moId },
+      });
+
+      if (pr?.sourceDocument?.startsWith('SO-')) {
+        const salesOrderId = pr.sourceDocument.substring(3);
+        const salesOrder = await db.salesOrder.findUnique({
+          where: { id: salesOrderId },
+          include: { customer: true },
+        });
+
+        if (salesOrder && salesOrder.customer) {
+          const emailHtml = EmailService.getMfgStartedTemplate(salesOrder.orderNumber);
+          await EmailService.send({
+            to: salesOrder.customer.email,
+            subject: `Production Started - ${salesOrder.orderNumber}`,
+            html: emailHtml,
+            userId: salesOrder.customer.userId,
+            notificationTitle: 'Production Started',
+            notificationMessage: `Production has commenced for your order ${salesOrder.orderNumber}.`,
+            referenceId: salesOrder.id,
+            referenceType: 'SalesOrder',
+          });
+        }
+      }
+    } catch (err: any) {
+      logger.error({ error: err.message, moId }, 'Failed to send notifyMfgStarted');
+    }
+  }
+
+  private static async notifyMfgCompleted(moId: string) {
+    try {
+      const mo = await db.manufacturingOrder.findUnique({ where: { id: moId } });
+      if (!mo || mo.status !== 'DONE') return;
+
+      const pr = await db.procurementRequest.findFirst({
+        where: { manufacturingOrderId: moId },
+      });
+
+      if (pr?.sourceDocument?.startsWith('SO-')) {
+        const salesOrderId = pr.sourceDocument.substring(3);
+        const salesOrder = await db.salesOrder.findUnique({
+          where: { id: salesOrderId },
+          include: { customer: true },
+        });
+
+        if (salesOrder && salesOrder.customer) {
+          // Send Mfg Completed
+          const emailHtml = EmailService.getMfgCompletedTemplate(salesOrder.orderNumber);
+          await EmailService.send({
+            to: salesOrder.customer.email,
+            subject: `Production Complete - ${salesOrder.orderNumber}`,
+            html: emailHtml,
+            userId: salesOrder.customer.userId,
+            notificationTitle: 'Production Completed',
+            notificationMessage: `Production is complete for your order ${salesOrder.orderNumber}.`,
+            referenceId: salesOrder.id,
+            referenceType: 'SalesOrder',
+          });
+
+          // Send Ready For Dispatch
+          const readyHtml = EmailService.getReadyForDispatchTemplate(salesOrder.orderNumber);
+          await EmailService.send({
+            to: salesOrder.customer.email,
+            subject: `Ready for Dispatch - ${salesOrder.orderNumber}`,
+            html: readyHtml,
+            userId: salesOrder.customer.userId,
+            notificationTitle: 'Ready for Dispatch',
+            notificationMessage: `Your order ${salesOrder.orderNumber} is ready for dispatch.`,
+            referenceId: salesOrder.id,
+            referenceType: 'SalesOrder',
+          });
+        }
+      }
+    } catch (err: any) {
+      logger.error({ error: err.message, moId }, 'Failed to send notifyMfgCompleted');
     }
   }
 }

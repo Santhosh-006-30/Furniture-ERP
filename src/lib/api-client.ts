@@ -2,6 +2,10 @@ const API_BASE = '/api';
 
 function getToken() {
   if (typeof window !== 'undefined') {
+    const customerToken = localStorage.getItem('customer_portal_token');
+    if (customerToken) {
+      return customerToken;
+    }
     return localStorage.getItem('mini_erp_token');
   }
   return null;

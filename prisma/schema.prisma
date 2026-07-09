@@ -59,6 +59,7 @@ model Product {
   dimensions          String?
   material            String?
   warranty            String?
+  rating              Float               @default(5.0)
   
   bomComponents       BoMComponent[]      @relation("componentProduct")
   finishedBoms        BillOfMaterials[]   @relation("yieldProduct")
@@ -68,6 +69,8 @@ model Product {
   manufacturingOrders ManufacturingOrder[]
   procurementRequests ProcurementRequest[]
   stockReservations   StockReservation[]
+  wishlists           Wishlist[]
+  reviews             Review[]
 
   @@map("products")
 }
@@ -87,33 +90,58 @@ model Vendor {
 }
 
 model Customer {
-  id             String       @id @default(uuid())
-  customerCode   String       @unique
-  name           String
-  email          String       @unique
-  phone          String?
-  address        String?
-  companyName    String?
-  gstNumber      String?
-  isActive       Boolean      @default(true)
-  userId         String?      @unique
-  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  salesOrders    SalesOrder[]
+  id              String       @id @default(uuid())
+  customerCode    String       @unique
+  name            String
+  email           String       @unique
+  phone           String?
+  address         String?
+  companyName     String?
+  gstNumber       String?
+  isActive        Boolean      @default(true)
+  userId          String?      @unique
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  // Loyalty Points
+  loyaltyPoints   Int          @default(0)
+  lifetimePoints  Int          @default(0)
+  redeemedPoints  Int          @default(0)
+  salesOrders     SalesOrder[]
+  wishlist        Wishlist[]
+  reviews         Review[]
+  returnRequests  ReturnRequest[]
 
   @@map("customers")
 }
 
 model SalesOrder {
-  id                String             @id @default(uuid())
-  orderNumber       String             @unique
-  customerId        String
-  customer          Customer           @relation(fields: [customerId], references: [id])
-  status            String             @default("DRAFT")
-  createdAt         DateTime           @default(now())
-  items             SalesOrderItem[]
-  stockReservations StockReservation[]
+  id                   String             @id @default(uuid())
+  orderNumber          String             @unique
+  customerId           String
+  customer             Customer           @relation(fields: [customerId], references: [id])
+  status               String             @default("DRAFT")
+  createdAt            DateTime           @default(now())
+  items                SalesOrderItem[]
+  stockReservations    StockReservation[]
+  paymentId            String?
+  razorpayOrderId      String?
+  paymentGateway       String?
+  paymentStatus        String?            @default("PENDING")
+  paidAt               DateTime?
+  transactionReference String?
+  trackingNumber       String?
+  courierName          String?
+  trackingUrl          String?
+  dispatchDate         DateTime?
+  deliveryDate         DateTime?
+  trackingStatus       String?
+  // Coupon & Loyalty
+  couponCode           String?
+  couponDiscount       Float?             @default(0)
+  loyaltyPointsUsed    Int?               @default(0)
+  loyaltyDiscount      Float?             @default(0)
+  returnRequests       ReturnRequest[]
 
   @@map("sales_orders")
 }
@@ -338,3 +366,69 @@ model Notification {
   @@map("notifications")
 }
 
+model Wishlist {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@map("wishlists")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating     Int
+  title      String
+  comment    String
+  createdAt  DateTime @default(now())
+
+  @@map("reviews")
+}
+
+model Coupon {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @default("PERCENT") // PERCENT | FIXED
+  discountValue   Float
+  minimumOrder    Float     @default(0)
+  maximumDiscount Float?
+  usageLimit      Int?
+  usageCount      Int       @default(0)
+  expiryDate      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("coupons")
+}
+
+model ReturnRequest {
+  id            String     @id @default(uuid())
+  returnNumber  String     @unique
+  salesOrderId  String
+  salesOrder    SalesOrder @relation(fields: [salesOrderId], references: [id])
+  customerId    String
+  customer      Customer   @relation(fields: [customerId], references: [id])
+  reason        String
+  description   String?
+  status        String     @default("REQUESTED") // REQUESTED | APPROVED | REJECTED | PICKED_UP | REFUNDED
+  refundAmount  Float?
+  refundNote    String?
+  adminNote     String?
+  requestedAt   DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  pickedUpAt    DateTime?
+  refundedAt    DateTime?
+
+  @@map("return_requests")
+}

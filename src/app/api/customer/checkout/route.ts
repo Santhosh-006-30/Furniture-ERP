@@ -12,18 +12,18 @@ export async function POST(req: Request) {
     const dbUser = await db.user.findUnique({
       where: { id: user?.id },
     });
-    if (!dbUser || dbUser.approvalStatus !== 'APPROVED' || !dbUser.isActive) {
-      return NextResponse.json({ error: 'Account not approved or active' }, { status: 403 });
+    if (!dbUser || !dbUser.isActive) {
+      return NextResponse.json({ error: 'Account not active' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { items } = body;
+    const { items, couponCode, loyaltyPointsUsed } = body;
 
     if (!items || !Array.isArray(items)) {
       return NextResponse.json({ error: 'Cart items array is required.' }, { status: 400 });
     }
 
-    const summary = await CustomerOrderService.checkout(dbUser.id, items);
+    const summary = await CustomerOrderService.checkout(dbUser.id, items, couponCode, loyaltyPointsUsed);
     return NextResponse.json(summary);
   } catch (error: any) {
     return NextResponse.json(

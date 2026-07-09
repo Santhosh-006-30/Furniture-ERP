@@ -221,56 +221,216 @@ async function main() {
   const finishedWoodenChair = await db.product.create({
     data: {
       sku: 'FG-WD-CHAIR',
-      name: 'Wooden Chair',
+      name: 'Heritage Lounge Chair',
       category: 'FINISHED_GOOD',
-      sellingPrice: 75.0,
-      costPrice: 40.0,
+      sellingPrice: 7500.0,
+      costPrice: 4200.0,
       stockQty: 30.0,
       reorderLevel: 10.0,
       procurementStrategy: 'MTS',
-      procurementType: 'MANUFACTURING'
+      procurementType: 'MANUFACTURING',
+      description: 'A sculpted lounge chair with hand-finished Sheesham wood and a plush upholstered seat for executive interiors.',
+      dimensions: '72 x 72 x 86 cm',
+      material: 'Sheesham Hardwood',
+      warranty: '5 Year Craftsmanship Warranty'
     }
   });
 
   const finishedWoodenTable = await db.product.create({
     data: {
       sku: 'FG-WD-TABLE',
-      name: 'Wooden Table',
+      name: 'Executive Oak Conference Table',
       category: 'FINISHED_GOOD',
-      sellingPrice: 180.0,
-      costPrice: 95.0,
+      sellingPrice: 18500.0,
+      costPrice: 9500.0,
       stockQty: 8.0,
       reorderLevel: 3.0,
       procurementStrategy: 'MTO',
-      procurementType: 'MANUFACTURING'
+      procurementType: 'MANUFACTURING',
+      description: 'A premium conference table with cable routing, powder-coated legs, and a seamless walnut finish.',
+      dimensions: '240 x 90 x 75 cm',
+      material: 'Solid Oak Veneer',
+      warranty: '3 Year Structural Warranty'
     }
   });
 
   const finishedDiningTable = await db.product.create({
     data: {
       sku: 'FG-DINING-TABLE',
-      name: 'Dining Table',
+      name: 'Sculpted Dining Table',
       category: 'FINISHED_GOOD',
-      sellingPrice: 350.0,
-      costPrice: 180.0,
+      sellingPrice: 24500.0,
+      costPrice: 18000.0,
       stockQty: 2.0,
       reorderLevel: 1.0,
       procurementStrategy: 'MTO',
-      procurementType: 'MANUFACTURING'
+      procurementType: 'MANUFACTURING',
+      description: 'A statement dining table with a live edge top and hand-brushed detailing for hospitality spaces.',
+      dimensions: '220 x 110 x 76 cm',
+      material: 'Acacia Solid Wood',
+      warranty: '5 Year Finish Warranty'
     }
   });
 
   const finishedOfficeChair = await db.product.create({
     data: {
       sku: 'FG-OFFICE-CHAIR',
-      name: 'Office Chair',
+      name: 'Ergo Task Chair',
       category: 'FINISHED_GOOD',
-      sellingPrice: 120.0,
-      costPrice: 65.0,
+      sellingPrice: 12800.0,
+      costPrice: 6500.0,
       stockQty: 15.0,
       reorderLevel: 5.0,
       procurementStrategy: 'MTS',
-      procurementType: 'MANUFACTURING'
+      procurementType: 'MANUFACTURING',
+      description: 'Ergonomic task seating with tilt control, lumbar support, and a polished mesh back.',
+      dimensions: '66 x 68 x 112 cm',
+      material: 'Mesh & Ashwood',
+      warranty: '2 Year Warranty'
+    }
+  });
+
+  const finishedConsoleUnit = await db.product.create({
+    data: {
+      sku: 'FG-CONSOLE-01',
+      name: 'Linea Console Unit',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 16800.0,
+      costPrice: 9500.0,
+      stockQty: 6.0,
+      reorderLevel: 2.0,
+      procurementStrategy: 'MTS',
+      procurementType: 'MANUFACTURING',
+      description: 'A slim console for entryways and lounge zones with integrated storage and brushed brass handles.',
+      dimensions: '180 x 42 x 78 cm',
+      material: 'Walnut Veneer',
+      warranty: '4 Year Warranty'
+    }
+  });
+
+  const finishedSideboard = await db.product.create({
+    data: {
+      sku: 'FG-SIDEB-01',
+      name: 'Studio Sideboard',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 21400.0,
+      costPrice: 12800.0,
+      stockQty: 4.0,
+      reorderLevel: 2.0,
+      procurementStrategy: 'MTO',
+      procurementType: 'MANUFACTURING',
+      description: 'A low-profile sideboard for dining or reception spaces with concealed compartments and tactile finish.',
+      dimensions: '200 x 45 x 84 cm',
+      material: 'Teakwood',
+      warranty: '5 Year Warranty'
+    }
+  });
+
+  const finishedLoungeSofa = await db.product.create({
+    data: {
+      sku: 'FG-SOFA-01',
+      name: 'Milan Lounge Sofa',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 32800.0,
+      costPrice: 19800.0,
+      stockQty: 5.0,
+      reorderLevel: 2.0,
+      procurementStrategy: 'MTS',
+      procurementType: 'MANUFACTURING',
+      description: 'A plush modular sofa with upholstered cushions, solid ash legs, and a sculpted silhouette for premium lounge spaces.',
+      dimensions: '220 x 95 x 78 cm',
+      material: 'Italian Leather',
+      warranty: '5 Year Warranty'
+    }
+  });
+
+  const finishedStorageBed = await db.product.create({
+    data: {
+      sku: 'FG-BED-01',
+      name: 'Haven Modular Storage Bed',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 41900.0,
+      costPrice: 25200.0,
+      stockQty: 3.0,
+      reorderLevel: 1.0,
+      procurementStrategy: 'MTO',
+      procurementType: 'MANUFACTURING',
+      description: 'A contemporary upholstered bed with integrated storage drawers and bespoke joinery for boutique hospitality rooms.',
+      dimensions: '210 x 200 x 120 cm',
+      material: 'Ashwood & Fabric',
+      warranty: '4 Year Warranty'
+    }
+  });
+
+  const finishedWritingDesk = await db.product.create({
+    data: {
+      sku: 'FG-DESK-01',
+      name: 'Atlas Writing Desk',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 15200.0,
+      costPrice: 9100.0,
+      stockQty: 9.0,
+      reorderLevel: 3.0,
+      procurementStrategy: 'MTS',
+      procurementType: 'MANUFACTURING',
+      description: 'A compact writing desk with a smoked oak top, cable management, and hidden drawers for executive studios.',
+      dimensions: '140 x 65 x 76 cm',
+      material: 'Smoked Oak',
+      warranty: '3 Year Warranty'
+    }
+  });
+
+  const finishedOttomanSet = await db.product.create({
+    data: {
+      sku: 'FG-OTTO-01',
+      name: 'Aurora Ottoman Set',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 11800.0,
+      costPrice: 6900.0,
+      stockQty: 7.0,
+      reorderLevel: 2.0,
+      procurementStrategy: 'MTS',
+      procurementType: 'MANUFACTURING',
+      description: 'A set of upholstered ottomans with tufted detailing and walnut feet, ideal for lounge and reception areas.',
+      dimensions: '45 x 45 x 42 cm',
+      material: 'Walnut & Velvet',
+      warranty: '2 Year Warranty'
+    }
+  });
+
+  const finishedBookshelf = await db.product.create({
+    data: {
+      sku: 'FG-BOOK-01',
+      name: 'Solace Bookshelf',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 19600.0,
+      costPrice: 11200.0,
+      stockQty: 4.0,
+      reorderLevel: 2.0,
+      procurementStrategy: 'MTO',
+      procurementType: 'MANUFACTURING',
+      description: 'A floating-style bookshelf with adjustable shelves and a matte lacquer finish for curated interiors.',
+      dimensions: '180 x 35 x 220 cm',
+      material: 'Matte Oak',
+      warranty: '4 Year Warranty'
+    }
+  });
+
+  const finishedSideTable = await db.product.create({
+    data: {
+      sku: 'FG-TABLE-02',
+      name: 'Ember Side Table',
+      category: 'FINISHED_GOOD',
+      sellingPrice: 8600.0,
+      costPrice: 4900.0,
+      stockQty: 11.0,
+      reorderLevel: 3.0,
+      procurementStrategy: 'MTS',
+      procurementType: 'MANUFACTURING',
+      description: 'An elegant nesting side table with a rounded profile and brushed brass inlay for modern spaces.',
+      dimensions: '55 x 55 x 62 cm',
+      material: 'Brushed Oak',
+      warranty: '2 Year Warranty'
     }
   });
   console.log('Products catalog seeded.');
@@ -355,7 +515,15 @@ async function main() {
     { prod: finishedWoodenChair, qty: 30.0 },
     { prod: finishedWoodenTable, qty: 8.0 },
     { prod: finishedDiningTable, qty: 2.0 },
-    { prod: finishedOfficeChair, qty: 15.0 }
+    { prod: finishedOfficeChair, qty: 15.0 },
+    { prod: finishedConsoleUnit, qty: 6.0 },
+    { prod: finishedSideboard, qty: 4.0 },
+    { prod: finishedLoungeSofa, qty: 5.0 },
+    { prod: finishedStorageBed, qty: 3.0 },
+    { prod: finishedWritingDesk, qty: 9.0 },
+    { prod: finishedOttomanSet, qty: 7.0 },
+    { prod: finishedBookshelf, qty: 4.0 },
+    { prod: finishedSideTable, qty: 11.0 }
   ];
 
   for (const item of initialStock) {

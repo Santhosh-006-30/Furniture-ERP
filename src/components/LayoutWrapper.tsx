@@ -19,7 +19,11 @@ import {
   Hammer,
   Truck,
   FileSpreadsheet,
-  UserRound
+  UserRound,
+  Tag,
+  RotateCcw,
+  BarChart2,
+  FileText
 } from 'lucide-react';
 
 interface LayoutWrapperProps {
@@ -67,13 +71,17 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'SALES', 'PURCHASE', 'MANUFACTURING', 'INVENTORY', 'OWNER'] },
+    { name: 'Analytics', path: '/analytics', icon: BarChart2, roles: ['ADMIN', 'OWNER', 'SALES'] },
     { name: 'Products', path: '/products', icon: Package, roles: ['ADMIN', 'SALES', 'MANUFACTURING', 'INVENTORY', 'OWNER'] },
     { name: 'Customers', path: '/customers', icon: UserRound, roles: ['ADMIN', 'SALES', 'OWNER'] },
     { name: 'Sales', path: '/sales', icon: ShoppingCart, roles: ['ADMIN', 'SALES', 'OWNER'] },
+    { name: 'Coupons', path: '/coupons', icon: Tag, roles: ['ADMIN', 'OWNER'] },
+    { name: 'Returns', path: '/returns', icon: RotateCcw, roles: ['ADMIN', 'SALES', 'OWNER'] },
     { name: 'Purchase', path: '/purchase', icon: TrendingUp, roles: ['ADMIN', 'PURCHASE', 'OWNER'] },
     { name: 'Manufacturing', path: '/manufacturing', icon: Hammer, roles: ['ADMIN', 'MANUFACTURING', 'OWNER'] },
     { name: 'BoM', path: '/bom', icon: FileSpreadsheet, roles: ['ADMIN', 'MANUFACTURING', 'OWNER'] },
     { name: 'Inventory', path: '/inventory', icon: Truck, roles: ['ADMIN', 'INVENTORY', 'OWNER'] },
+    { name: 'Reports', path: '/reports', icon: FileText, roles: ['ADMIN', 'OWNER', 'SALES', 'PURCHASE', 'MANUFACTURING', 'INVENTORY'] },
     { name: 'Audit Logs', path: '/audit', icon: History, roles: ['ADMIN', 'OWNER'] },
     { name: 'Users', path: '/users', icon: Users, roles: ['ADMIN', 'OWNER'] },
     { name: 'Settings', path: '/settings', icon: Settings, roles: ['ADMIN'] }

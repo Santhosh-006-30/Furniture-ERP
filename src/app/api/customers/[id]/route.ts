@@ -16,6 +16,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       email: body.email,
       phone: body.phone,
       address: body.address,
+      companyName: body.companyName,
+      gstNumber: body.gstNumber,
       isActive: body.isActive,
     });
 

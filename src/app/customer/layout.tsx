@@ -14,7 +14,10 @@ import {
   LogOut,
   Menu,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Heart,
+  Layers,
+  RotateCcw
 } from 'lucide-react';
 
 interface CustomerLayoutProps {
@@ -29,11 +32,26 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
   const [token, setToken] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   const isAuthPage =
     pathname === '/customer/login' ||
     pathname === '/customer/register' ||
     pathname === '/customer/forgot-password';
+
+  const fetchWishlistCount = async () => {
+    const storedToken = localStorage.getItem('customer_portal_token');
+    if (!storedToken) return;
+    try {
+      const res = await fetch('/api/customer/wishlist?pageSize=1', {
+        headers: { 'Authorization': `Bearer ${storedToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWishlistCount(data.pagination?.totalItems || 0);
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => {
     if (isAuthPage) {
@@ -55,6 +73,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         }
         setCustomerUser(parsedUser);
         setToken(storedToken);
+        fetchWishlistCount();
       } catch (e) {
         localStorage.removeItem('customer_portal_user');
         localStorage.removeItem('customer_portal_token');
@@ -73,6 +92,9 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
     { name: 'My Orders', path: '/customer/orders', icon: History },
     { name: 'Invoices', path: '/customer/invoices', icon: FileText },
     { name: 'Notifications', path: '/customer/notifications', icon: Bell },
+    { name: 'Wishlist', path: '/customer/wishlist', icon: Heart },
+    { name: 'Compare', path: '/customer/compare', icon: Layers },
+    { name: 'Returns', path: '/customer/returns', icon: RotateCcw },
     { name: 'Profile', path: '/customer/profile', icon: User }
   ];
 
@@ -130,14 +152,21 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold rounded-xl transition-all duration-200 ${
+                  className={`flex items-center justify-between px-4 py-3 text-xs font-semibold rounded-xl transition-all duration-200 ${
                     isActive
                       ? 'bg-sky-500/10 text-sky-400 border-l-4 border-sky-400 shadow-md shadow-sky-500/5'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.name}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.name === 'Wishlist' && wishlistCount > 0 && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                      {wishlistCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

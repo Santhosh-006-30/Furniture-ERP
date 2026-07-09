@@ -3,6 +3,8 @@ import { SalesService } from './sales.service';
 import { SalesWorkflowService } from './sales-workflow.service';
 import { authenticateRequest } from '../../lib/auth-middleware';
 import { logger } from '../../lib/pino';
+import { db } from '../../lib/db';
+import { EmailService } from '../../lib/email';
 
 export class SalesController {
   static async list(req: Request) {
@@ -54,6 +56,30 @@ export class SalesController {
 
     try {
       const order = await SalesWorkflowService.confirmOrder(params.id, user?.name || 'System Operator');
+
+      try {
+        const fullOrder = await db.salesOrder.findUnique({
+          where: { id: params.id },
+          include: { customer: true },
+        });
+
+        if (fullOrder && fullOrder.customer) {
+          const confirmedEmailHtml = EmailService.getOrderConfirmedTemplate(fullOrder.orderNumber);
+          await EmailService.send({
+            to: fullOrder.customer.email,
+            subject: `Your order ${fullOrder.orderNumber} has been confirmed`,
+            html: confirmedEmailHtml,
+            userId: fullOrder.customer.userId,
+            notificationTitle: 'Order Confirmed',
+            notificationMessage: `Your order ${fullOrder.orderNumber} has been confirmed by our operations team.`,
+            referenceId: fullOrder.id,
+            referenceType: 'SalesOrder',
+          });
+        }
+      } catch (emailErr) {
+        logger.error({ emailErr, orderId: params.id }, 'Order confirmed notification email failed');
+      }
+
       return NextResponse.json(order);
     } catch (error: any) {
       logger.error({ error: error.message, orderId: params.id }, 'Failed to confirm sales order');
@@ -72,6 +98,49 @@ export class SalesController {
       }
 
       const status = await SalesWorkflowService.deliverOrder(params.id, body.deliveries, user?.name || 'System Operator');
+
+      try {
+        const fullOrder = await db.salesOrder.findUnique({
+          where: { id: params.id },
+          include: { customer: true },
+        });
+
+        if (fullOrder && fullOrder.customer) {
+          if (status === 'FULLY_DELIVERED') {
+            const emailHtml = EmailService.getDeliveredTemplate(fullOrder.orderNumber);
+            await EmailService.send({
+              to: fullOrder.customer.email,
+              subject: `Your order ${fullOrder.orderNumber} has been delivered`,
+              html: emailHtml,
+              userId: fullOrder.customer.userId,
+              notificationTitle: 'Order Delivered',
+              notificationMessage: `Your order ${fullOrder.orderNumber} has been successfully delivered.`,
+              referenceId: fullOrder.id,
+              referenceType: 'SalesOrder',
+            });
+          } else if (status === 'PARTIALLY_DELIVERED') {
+            const emailHtml = EmailService.getOrderShippedTemplate(
+              fullOrder.orderNumber,
+              fullOrder.courierName || 'Partner Courier',
+              fullOrder.trackingNumber || 'Pending Assignment',
+              fullOrder.trackingUrl
+            );
+            await EmailService.send({
+              to: fullOrder.customer.email,
+              subject: `Part of your order ${fullOrder.orderNumber} has been dispatched`,
+              html: emailHtml,
+              userId: fullOrder.customer.userId,
+              notificationTitle: 'Partial Dispatch',
+              notificationMessage: `A shipment has been dispatched for your order ${fullOrder.orderNumber}.`,
+              referenceId: fullOrder.id,
+              referenceType: 'SalesOrder',
+            });
+          }
+        }
+      } catch (emailErr) {
+        logger.error({ emailErr, orderId: params.id }, 'Order delivery notification email failed');
+      }
+
       return NextResponse.json({ status });
     } catch (error: any) {
       logger.error({ error: error.message, orderId: params.id }, 'Failed to process sales order delivery');

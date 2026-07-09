@@ -3,12 +3,11 @@ import { db } from '../../lib/db';
 export class SalesRepository {
   static async listCustomers() {
     return db.customer.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'desc' },
       include: {
         salesOrders: {
-          select: { id: true, orderNumber: true, status: true },
+          include: { items: true },
           orderBy: { createdAt: 'desc' },
-          take: 10,
         },
       },
     });
@@ -26,6 +25,9 @@ export class SalesRepository {
     email: string;
     phone?: string;
     address?: string;
+    companyName?: string;
+    gstNumber?: string;
+    isActive?: boolean;
   }) {
     return db.customer.create({
       data: {
@@ -34,6 +36,9 @@ export class SalesRepository {
         email: data.email,
         phone: data.phone,
         address: data.address,
+        companyName: data.companyName,
+        gstNumber: data.gstNumber,
+        isActive: data.isActive ?? true,
       },
     });
   }
@@ -46,6 +51,8 @@ export class SalesRepository {
       email: string;
       phone: string;
       address: string;
+      companyName: string;
+      gstNumber: string;
       isActive: boolean;
     }>
   ) {

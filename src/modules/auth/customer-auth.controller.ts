@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '../../lib/db';
 import { signToken } from '../../lib/jwt';
 import { logger } from '../../lib/pino';
+import { EmailService } from '../../lib/email';
 
 export class CustomerAuthController {
   static async register(req: Request) {
@@ -33,14 +34,15 @@ export class CustomerAuthController {
         const salt = bcrypt.genSaltSync(10);
         const hash = bcrypt.hashSync(password, salt);
 
-        // 1. Create User with role CUSTOMER and PENDING approval
+        // 1. Create User with role CUSTOMER and immediate approval
         const user = await tx.user.create({
           data: {
             email,
             passwordHash: hash,
             name,
             role: 'CUSTOMER',
-            approvalStatus: 'PENDING',
+            approvalStatus: 'APPROVED',
+            isActive: true,
           },
         });
 
@@ -58,29 +60,33 @@ export class CustomerAuthController {
             address: address || null,
             companyName: companyName || null,
             gstNumber: gstNumber || null,
+            isActive: true,
             userId: user.id,
           },
         });
-
-        // 3. Create Notification for admins
-        const admins = await tx.user.findMany({
-          where: { role: 'ADMIN' },
-        });
-        for (const admin of admins) {
-          await tx.notification.create({
-            data: {
-              userId: admin.id,
-              title: 'New User Registration',
-              message: `${user.name} is waiting for approval.`,
-              type: 'USER_REGISTRATION',
-            },
-          });
-        }
 
         return { user, customer };
       });
 
       logger.info({ email }, 'New customer profile registered successfully');
+
+      // Trigger Welcome Email
+      try {
+        const welcomeEmailHtml = EmailService.getWelcomeTemplate(name);
+        await EmailService.send({
+          to: email,
+          subject: 'Welcome to Shiv Furniture Works!',
+          html: welcomeEmailHtml,
+          userId: result.user.id,
+          notificationTitle: 'Welcome to Shiv Furniture!',
+          notificationMessage: 'Thank you for registering with us. We are happy to have you!',
+          referenceId: result.customer.id,
+          referenceType: 'Customer',
+        });
+      } catch (welcomeErr) {
+        logger.error({ welcomeErr }, 'Failed to send welcome email');
+      }
+
       return NextResponse.json({ success: true, userId: result.user.id });
     } catch (error: any) {
       logger.warn({ error: error.message }, 'Customer registration failed');
@@ -116,10 +122,6 @@ export class CustomerAuthController {
 
       if (!user.isActive) {
         return NextResponse.json({ error: 'Account deactivated. Please contact administrator.' }, { status: 400 });
-      }
-
-      if (user.approvalStatus !== 'APPROVED') {
-        return NextResponse.json({ error: 'Your account is awaiting administrator approval.' }, { status: 400 });
       }
 
       const matched = bcrypt.compareSync(password, user.passwordHash);

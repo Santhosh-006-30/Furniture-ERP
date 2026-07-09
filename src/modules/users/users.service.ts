@@ -2,7 +2,8 @@ import { UserRepository } from '../auth/user.repository';
 
 export class UsersService {
   static async listUsers() {
-    return UserRepository.listAll();
+    const users = await UserRepository.listAll();
+    return users.filter((user) => user.role !== 'CUSTOMER');
   }
 
   static async updateUser(

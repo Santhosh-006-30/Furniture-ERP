@@ -11,8 +11,8 @@ export async function GET(req: Request) {
     const dbUser = await db.user.findUnique({
       where: { id: user?.id },
     });
-    if (!dbUser || dbUser.approvalStatus !== 'APPROVED' || !dbUser.isActive) {
-      return NextResponse.json({ error: 'Account not approved or active' }, { status: 403 });
+    if (!dbUser || !dbUser.isActive) {
+      return NextResponse.json({ error: 'Account not active' }, { status: 403 });
     }
 
     // Resolve customer profile
@@ -76,6 +76,9 @@ export async function GET(req: Request) {
       deliveredOrders,
       recentOrders,
       notifications,
+      loyaltyPoints: customer.loyaltyPoints,
+      lifetimePoints: customer.lifetimePoints,
+      redeemedPoints: customer.redeemedPoints,
     });
   } catch (error: any) {
     return NextResponse.json(
