@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import bcrypt from 'bcryptjs';
 
-const db = new PrismaClient();
+const dbUrl = process.env.DATABASE_URL ?? 'file:./prisma/dev.db';
+const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+const db = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Seeding Shiv Furniture Works master data...');
@@ -101,13 +104,18 @@ async function main() {
   console.log('Vendors loaded.');
 
   // 4. Customers
+  const customerUser = await db.user.findUnique({
+    where: { email: 'customer@abcinteriors.com' }
+  });
+
   await db.customer.create({
     data: {
       customerCode: 'CUST-001',
       name: 'ABC Interiors',
-      email: 'purchase@abcinteriors.com',
+      email: 'customer@abcinteriors.com',
       phone: '+91 7777766666',
-      address: 'A-24, Connaught Place, New Delhi'
+      address: 'A-24, Connaught Place, New Delhi',
+      userId: customerUser?.id
     }
   });
 

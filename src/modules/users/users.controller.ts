@@ -32,6 +32,7 @@ export class UsersController {
         isActive: body.isActive,
         name: body.name,
         permissions: body.permissions,
+        approvalStatus: body.approvalStatus,
       });
 
       logger.info({ targetUserId: id, updatedBy: user?.email }, 'User profile updated');
@@ -41,6 +42,50 @@ export class UsersController {
       logger.error({ error: error.message, targetUserId: params.id }, 'Failed to update user');
       return NextResponse.json(
         { error: error.message || 'Failed to update user' },
+        { status: 400 }
+      );
+    }
+  }
+
+  static async approve(req: Request, { params }: { params: { id: string } }) {
+    const { errorResponse, user } = await authenticateRequest(req, ['ADMIN', 'OWNER']);
+    if (errorResponse) return errorResponse;
+
+    try {
+      const id = params.id;
+      const updated = await UsersService.updateUser(id, {
+        approvalStatus: 'APPROVED',
+      });
+
+      logger.info({ targetUserId: id, approvedBy: user?.email }, 'User approved');
+      const { passwordHash, ...rest } = updated;
+      return NextResponse.json(rest);
+    } catch (error: any) {
+      logger.error({ error: error.message, targetUserId: params.id }, 'Failed to approve user');
+      return NextResponse.json(
+        { error: error.message || 'Failed to approve user' },
+        { status: 400 }
+      );
+    }
+  }
+
+  static async reject(req: Request, { params }: { params: { id: string } }) {
+    const { errorResponse, user } = await authenticateRequest(req, ['ADMIN', 'OWNER']);
+    if (errorResponse) return errorResponse;
+
+    try {
+      const id = params.id;
+      const updated = await UsersService.updateUser(id, {
+        approvalStatus: 'REJECTED',
+      });
+
+      logger.info({ targetUserId: id, rejectedBy: user?.email }, 'User rejected');
+      const { passwordHash, ...rest } = updated;
+      return NextResponse.json(rest);
+    } catch (error: any) {
+      logger.error({ error: error.message, targetUserId: params.id }, 'Failed to reject user');
+      return NextResponse.json(
+        { error: error.message || 'Failed to reject user' },
         { status: 400 }
       );
     }

@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@tanstack/react-table": "^8.21.3",
+    "@types/better-sqlite3": "^7.6.13",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
     "jose": "^6.2.3",
     "lucide-react": "^1.21.0",
     "next": "15.5.19",

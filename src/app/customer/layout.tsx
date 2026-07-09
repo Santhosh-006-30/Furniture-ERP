@@ -1,93 +1,103 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useStore } from '../lib/store';
 import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  TrendingUp,
-  Settings,
-  Users,
   History,
+  FileText,
+  Bell,
+  User,
   LogOut,
   Menu,
   X,
-  ShieldCheck,
-  Hammer,
-  Truck,
-  FileSpreadsheet,
-  UserRound
+  ShieldCheck
 } from 'lucide-react';
 
-interface LayoutWrapperProps {
+interface CustomerLayoutProps {
   children: React.ReactNode;
 }
 
-export default function LayoutWrapper({ children }: LayoutWrapperProps) {
+export default function CustomerLayout({ children }: CustomerLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, sidebarOpen, toggleSidebar, clearAuth, setAuth } = useStore();
+  
+  const [customerUser, setCustomerUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const isCustomerRoute = pathname.startsWith('/customer');
   const isAuthPage =
-    pathname.includes('/login') ||
-    pathname.includes('/register') ||
-    pathname.includes('/forgot-password') ||
-    pathname.includes('/session-expired');
+    pathname === '/customer/login' ||
+    pathname === '/customer/register' ||
+    pathname === '/customer/forgot-password';
 
   useEffect(() => {
-    if (isCustomerRoute) return;
+    if (isAuthPage) {
+      setLoading(false);
+      return;
+    }
 
-    // Initialise auth cache
-    const storedUser = localStorage.getItem('mini_erp_user');
-    const storedToken = localStorage.getItem('mini_erp_token');
+    // Initialise customer auth cache
+    const storedUser = localStorage.getItem('customer_portal_user');
+    const storedToken = localStorage.getItem('customer_portal_token');
+
     if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        if (parsedUser.role === 'CUSTOMER') {
-          clearAuth();
-          router.push('/customer/login');
+        if (parsedUser.role !== 'CUSTOMER') {
+          // If ERP user tries to access customer pages -> show 403 or redirect
+          router.push('/session-expired'); // or custom 403 page
           return;
         }
-        setAuth(parsedUser, storedToken);
+        setCustomerUser(parsedUser);
+        setToken(storedToken);
       } catch (e) {
-        clearAuth();
+        localStorage.removeItem('customer_portal_user');
+        localStorage.removeItem('customer_portal_token');
+        router.push('/customer/login');
       }
-    } else if (!isAuthPage) {
-      router.push('/login');
+    } else {
+      router.push('/customer/login');
     }
-  }, [pathname, isAuthPage, isCustomerRoute]);
+    setLoading(false);
+  }, [pathname, isAuthPage]);
 
-  if (isAuthPage || isCustomerRoute) {
+  const menuItems = [
+    { name: 'Dashboard', path: '/customer/dashboard', icon: LayoutDashboard },
+    { name: 'Products', path: '/customer/products', icon: Package },
+    { name: 'Cart', path: '/customer/cart', icon: ShoppingCart },
+    { name: 'My Orders', path: '/customer/orders', icon: History },
+    { name: 'Invoices', path: '/customer/invoices', icon: FileText },
+    { name: 'Notifications', path: '/customer/notifications', icon: Bell },
+    { name: 'Profile', path: '/customer/profile', icon: User }
+  ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('customer_portal_user');
+    localStorage.removeItem('customer_portal_token');
+    router.push('/customer/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#060913] text-slate-400 font-mono text-sm">
+        <span>Authenticating Customer Session...</span>
+      </div>
+    );
+  }
+
+  if (isAuthPage) {
     return <>{children}</>;
   }
 
-  const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'SALES', 'PURCHASE', 'MANUFACTURING', 'INVENTORY', 'OWNER'] },
-    { name: 'Products', path: '/products', icon: Package, roles: ['ADMIN', 'SALES', 'MANUFACTURING', 'INVENTORY', 'OWNER'] },
-    { name: 'Customers', path: '/customers', icon: UserRound, roles: ['ADMIN', 'SALES', 'OWNER'] },
-    { name: 'Sales', path: '/sales', icon: ShoppingCart, roles: ['ADMIN', 'SALES', 'OWNER'] },
-    { name: 'Purchase', path: '/purchase', icon: TrendingUp, roles: ['ADMIN', 'PURCHASE', 'OWNER'] },
-    { name: 'Manufacturing', path: '/manufacturing', icon: Hammer, roles: ['ADMIN', 'MANUFACTURING', 'OWNER'] },
-    { name: 'BoM', path: '/bom', icon: FileSpreadsheet, roles: ['ADMIN', 'MANUFACTURING', 'OWNER'] },
-    { name: 'Inventory', path: '/inventory', icon: Truck, roles: ['ADMIN', 'INVENTORY', 'OWNER'] },
-    { name: 'Audit Logs', path: '/audit', icon: History, roles: ['ADMIN', 'OWNER'] },
-    { name: 'Users', path: '/users', icon: Users, roles: ['ADMIN', 'OWNER'] },
-    { name: 'Settings', path: '/settings', icon: Settings, roles: ['ADMIN'] }
-  ];
-
-  const filteredMenuItems = menuItems.filter(item => {
-    if (!user) return false;
-    return item.roles.includes(user.role);
-  });
-
-  const handleLogout = () => {
-    clearAuth();
-    router.push('/login');
-  };
+  // Ensure layout is only shown for authenticated customers
+  if (!customerUser) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#060913] text-slate-100 font-sans">
@@ -100,20 +110,20 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
         <div className="flex flex-col h-full">
           {/* Logo Section */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800/80 bg-[#0d1426]/20">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/customer/dashboard" className="flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-sky-400" />
               <span className="font-extrabold text-base tracking-wide bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
-                SHIV FURNITURE
+                BUYER PORTAL
               </span>
             </Link>
-            <button onClick={toggleSidebar} className="p-1.5 rounded-lg md:hidden hover:bg-slate-800">
+            <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg md:hidden hover:bg-slate-800">
               <X className="w-5 h-5 text-slate-400" />
             </button>
           </div>
 
           {/* Navigation Links */}
           <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-            {filteredMenuItems.map((item) => {
+            {menuItems.map((item) => {
               const isActive = pathname === item.path;
               const Icon = item.icon;
               return (
@@ -137,12 +147,12 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           <div className="p-4 border-t border-slate-800/80 bg-[#070b14]/50">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center font-bold text-xs uppercase shadow-inner text-white">
-                {user?.name?.slice(0, 2) || 'US'}
+                {customerUser.name?.slice(0, 2) || 'CS'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-200 truncate">{user?.name || 'Loading...'}</p>
+                <p className="text-xs font-bold text-slate-200 truncate">{customerUser.name || 'Customer'}</p>
                 <span className="inline-block mt-0.5 px-2 py-0.5 text-[9px] font-bold font-mono tracking-wide rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 uppercase">
-                  {user?.role || 'Guest'}
+                  BUYER
                 </span>
               </div>
             </div>
@@ -163,14 +173,14 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
         <header className="flex items-center justify-between h-16 px-6 bg-[#090e1a]/60 backdrop-blur-md border-b border-slate-800/80 z-30">
           <div className="flex items-center gap-4">
             <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-400 transition-colors"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-400 transition-colors md:hidden"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="hidden sm:block">
+            <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest font-mono">
-                Control Center
+                Customer Workspace
               </span>
             </div>
           </div>
@@ -187,7 +197,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
 
         {/* Page Children */}
         <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#060913]">
-          <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+          <div className="max-w-7xl mx-auto space-y-8">
             {children}
           </div>
         </main>

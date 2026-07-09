@@ -1,6 +1,5 @@
 datasource db {
-  url      = env("DATABASE_URL")
-
+  provider = "sqlite"
 }
 
 generator client {
@@ -24,14 +23,18 @@ generator client {
 // Category: RAW_MATERIAL, COMPONENT, FINISHED_GOOD
 
 model User {
-  id            String     @id @default(uuid())
-  email         String     @unique
-  passwordHash  String
-  name          String
-  role          String     @default("SALES")
-  isActive      Boolean    @default(true)
-  permissions   String     @default("[]")
-  auditLogs     AuditLog[]
+  id             String         @id @default(uuid())
+  email          String         @unique
+  passwordHash   String
+  name           String
+  role           String         @default("SALES")
+  isActive       Boolean        @default(true)
+  permissions    String         @default("[]")
+  approvalStatus ApprovalStatus @default(APPROVED)
+  createdAt      DateTime       @default(now())
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  customer       Customer?
 
   @@map("users")
 }
@@ -52,6 +55,10 @@ model Product {
   reorderLevel        Float               @default(5.0)
   preferredVendorId   String?
   preferredVendor     Vendor?             @relation(fields: [preferredVendorId], references: [id])
+  description         String?
+  dimensions          String?
+  material            String?
+  warranty            String?
   
   bomComponents       BoMComponent[]      @relation("componentProduct")
   finishedBoms        BillOfMaterials[]   @relation("yieldProduct")
@@ -86,7 +93,11 @@ model Customer {
   email          String       @unique
   phone          String?
   address        String?
+  companyName    String?
+  gstNumber      String?
   isActive       Boolean      @default(true)
+  userId         String?      @unique
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   salesOrders    SalesOrder[]
@@ -305,3 +316,25 @@ model ProcurementRequest {
 
   @@map("procurement_requests")
 }
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Notification {
+  id            String    @id @default(uuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  message       String
+  type          String
+  isRead        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  referenceId   String?
+  referenceType String?
+
+  @@map("notifications")
+}
+

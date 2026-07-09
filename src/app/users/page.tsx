@@ -14,7 +14,8 @@ import {
   Save,
   Loader2,
   AlertCircle,
-  ShieldAlert
+  ShieldAlert,
+  RefreshCw
 } from 'lucide-react';
 
 interface PermissionItem {
@@ -32,6 +33,8 @@ interface UserProfile {
   role: string;
   isActive: boolean;
   permissions: string; // JSON string
+  approvalStatus: string;
+  createdAt: string;
 }
 
 export default function UsersPage() {
@@ -41,6 +44,7 @@ export default function UsersPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [filterApproval, setFilterApproval] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   
   // Local permissions editing states
   const [editStates, setEditStates] = useState<Record<string, {
@@ -158,6 +162,38 @@ export default function UsersPage() {
     });
   };
 
+  const handleApprove = async (userId: string) => {
+    try {
+      setUpdatingId(userId);
+      const res = await api.post(`/users/${userId}/approve`, {});
+      
+      // Update local state
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, approvalStatus: 'APPROVED' } : u));
+      
+      alert('User account approved successfully!');
+    } catch (err: any) {
+      alert(`Failed to approve user: ${err.message}`);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    try {
+      setUpdatingId(userId);
+      const res = await api.post(`/users/${userId}/reject`, {});
+      
+      // Update local state
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, approvalStatus: 'REJECTED' } : u));
+      
+      alert('User account rejected successfully!');
+    } catch (err: any) {
+      alert(`Failed to reject user: ${err.message}`);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const handleSaveRow = async (userId: string) => {
     const state = editStates[userId];
     if (!state) return;
@@ -193,10 +229,17 @@ export default function UsersPage() {
   };
 
   const filteredUsers = usersList.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      u.role.toLowerCase().includes(search.toLowerCase())
+    (u) => {
+      const matchesSearch =
+        u.name.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase()) ||
+        u.role.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesApproval =
+        filterApproval === 'ALL' || u.approvalStatus === filterApproval;
+
+      return matchesSearch && matchesApproval;
+    }
   );
 
   if (loading) {
@@ -233,16 +276,43 @@ export default function UsersPage() {
       </div>
 
       {/* Operations Bar */}
-      <div className="flex gap-4 max-w-md">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search commanders by Name, Email, or Role..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full glass-input pl-10 pr-4 py-3 rounded-xl text-xs"
-          />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-[280px] max-w-md">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search commanders by Name, Email, or Role..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full glass-input pl-10 pr-4 py-3 rounded-xl text-xs"
+            />
+          </div>
+          <button
+            onClick={fetchUsers}
+            disabled={loading}
+            title="Refresh Directory"
+            className="p-3 bg-[#0d1426] border border-slate-800/80 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        {/* Approval Filters */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#090e1a] border border-slate-800/60 rounded-xl">
+          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterApproval(status)}
+              className={`px-3 py-1.5 rounded-lg text-xxs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                filterApproval === status
+                  ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-md shadow-sky-500/5'
+                  : 'text-slate-400 hover:text-slate-300 border border-transparent'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -260,6 +330,7 @@ export default function UsersPage() {
                     {modName}
                   </th>
                 ))}
+                <th className="p-4 font-bold border-r border-slate-850 text-center" rowSpan={2}>Approval</th>
                 <th className="p-4 font-bold border-r border-slate-850 text-center" rowSpan={2}>Status</th>
                 <th className="p-4 font-bold text-center" rowSpan={2}>Matrix Save</th>
               </tr>
@@ -281,6 +352,8 @@ export default function UsersPage() {
                 const state = editStates[u.id];
                 if (!state) return null;
 
+                const isNew = u.createdAt ? (new Date().getTime() - new Date(u.createdAt).getTime() < 24 * 60 * 60 * 1000) : false;
+
                 return (
                   <tr key={u.id} className="hover:bg-slate-900/30 transition-colors">
                     {/* User Metadata */}
@@ -290,7 +363,14 @@ export default function UsersPage() {
                           {u.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-slate-200 truncate">{u.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-200 truncate">{u.name}</span>
+                            {isNew && (
+                              <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 text-[8px] font-extrabold uppercase font-mono tracking-wide">
+                                NEW
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xxs text-slate-500 font-mono truncate">{u.email}</span>
                         </div>
                       </div>
@@ -366,13 +446,59 @@ export default function UsersPage() {
                       );
                     })}
 
+                    {/* Approval Action/Badge */}
+                    <td className="p-3 text-center border-r border-slate-850 min-w-[130px]">
+                      {u.approvalStatus === 'PENDING' ? (
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={updatingId === u.id || isMe}
+                            onClick={() => handleApprove(u.id)}
+                            title="Approve Commander"
+                            className="p-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={updatingId === u.id || isMe}
+                            onClick={() => handleReject(u.id)}
+                            title="Reject Commander"
+                            className="p-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer"
+                          >
+                            <UserX className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider border ${
+                            u.approvalStatus === 'APPROVED'
+                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                              : 'bg-rose-500/10 border-rose-500/20 text-rose-450'
+                          }`}>
+                            {u.approvalStatus}
+                          </span>
+                          {u.approvalStatus === 'REJECTED' && !isMe && (
+                            <button
+                              type="button"
+                              disabled={updatingId === u.id}
+                              onClick={() => handleApprove(u.id)}
+                              className="text-[9px] text-sky-400 hover:text-sky-300 underline font-mono mt-1 cursor-pointer"
+                            >
+                              Re-Approve
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
                     {/* Status Toggle */}
                     <td className="p-3 text-center border-r border-slate-850">
                       <button
                         type="button"
                         disabled={isMe || updatingId === u.id}
                         onClick={() => handleLocalStatusToggle(u.id)}
-                        className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono border ${
+                        className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono border cursor-pointer ${
                           state.isActive
                             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                             : 'bg-rose-500/10 border-rose-500/20 text-rose-450'
