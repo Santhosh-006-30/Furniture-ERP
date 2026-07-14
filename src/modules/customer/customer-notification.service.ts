@@ -1,8 +1,10 @@
 import { db } from '../../lib/db';
 
 export interface CustomerNotificationListOptions {
-  filter?: 'all' | 'unread' | 'read';
+  filter?: 'all' | 'unread' | 'read' | 'archived';
   search?: string;
+  category?: string;
+  priority?: string;
   page?: number;
   pageSize?: number;
 }
@@ -22,12 +24,30 @@ export class CustomerNotificationService {
     const page = Math.max(1, Number(options.page ?? 1));
     const filter = options.filter ?? 'all';
     const search = (options.search || '').trim();
+    const category = options.category ?? '';
+    const priority = options.priority ?? '';
 
     const where: any = { userId: customer.userId };
+
+    // Filter by read/unread/archived
     if (filter === 'unread') {
       where.isRead = false;
+      where.isArchived = false;
     } else if (filter === 'read') {
       where.isRead = true;
+      where.isArchived = false;
+    } else if (filter === 'archived') {
+      where.isArchived = true;
+    } else {
+      // By default show non-archived ones
+      where.isArchived = false;
+    }
+
+    if (category) {
+      where.category = category;
+    }
+    if (priority) {
+      where.priority = priority;
     }
 
     if (search) {
@@ -94,6 +114,55 @@ export class CustomerNotificationService {
     });
   }
 
+  static async archiveNotification(notificationId: string, customerId: string, isArchived: boolean) {
+    const customer = await this.getCustomer(customerId);
+    if (!customer?.userId) {
+      throw new Error('Customer profile not found.');
+    }
+
+    const notification = await db.notification.findFirst({
+      where: { id: notificationId, userId: customer.userId },
+    });
+
+    if (!notification) {
+      throw new Error('Notification not found or access denied.');
+    }
+
+    return db.notification.update({
+      where: { id: notificationId },
+      data: { isArchived },
+    });
+  }
+
+  static async bulkDelete(notificationIds: string[], customerId: string) {
+    const customer = await this.getCustomer(customerId);
+    if (!customer?.userId) {
+      throw new Error('Customer profile not found.');
+    }
+
+    return db.notification.deleteMany({
+      where: {
+        id: { in: notificationIds },
+        userId: customer.userId,
+      },
+    });
+  }
+
+  static async bulkMarkRead(notificationIds: string[], customerId: string) {
+    const customer = await this.getCustomer(customerId);
+    if (!customer?.userId) {
+      throw new Error('Customer profile not found.');
+    }
+
+    return db.notification.updateMany({
+      where: {
+        id: { in: notificationIds },
+        userId: customer.userId,
+      },
+      data: { isRead: true },
+    });
+  }
+
   static async deleteNotification(notificationId: string, customerId: string) {
     const customer = await this.getCustomer(customerId);
     if (!customer?.userId) {
@@ -118,13 +187,13 @@ export class CustomerNotificationService {
     }
 
     return db.notification.count({
-      where: { userId: customer.userId, isRead: false },
+      where: { userId: customer.userId, isRead: false, isArchived: false },
     });
   }
 
   static async createNotificationForCustomer(
     customerId: string,
-    payload: { title: string; message: string; type: string; referenceId?: string | null; referenceType?: string | null }
+    payload: { title: string; message: string; type: string; category?: string; priority?: string; referenceId?: string | null; referenceType?: string | null }
   ) {
     const customer = await this.getCustomer(customerId);
     if (!customer?.userId) {
@@ -137,6 +206,8 @@ export class CustomerNotificationService {
         title: payload.title,
         message: payload.message,
         type: payload.type,
+        category: payload.category || 'GENERAL',
+        priority: payload.priority || 'MEDIUM',
         referenceId: payload.referenceId || null,
         referenceType: payload.referenceType || null,
       },

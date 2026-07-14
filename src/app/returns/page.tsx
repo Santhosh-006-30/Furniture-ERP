@@ -33,8 +33,11 @@ const STATUS_COLORS: Record<string, string> = {
   REFUNDED: 'bg-green-500/15 text-green-400',
 };
 
-const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
-const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('en-IN') : '—';
+import { formatCurrency, formatDate } from '../../lib/format';
+
+const fmt = formatCurrency;
+const fmtDate = (d?: string) => d ? formatDate(d) : '—';
+
 
 export default function ReturnsManagementPage() {
   const [returns, setReturns] = useState<ReturnRequest[]>([]);

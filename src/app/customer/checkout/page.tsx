@@ -21,6 +21,12 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import api from '../../../lib/api-client';
+import { Stepper } from '../../../components/ui/Stepper';
+import { GlassInput } from '../../../components/ui/GlassInput';
+import { PrimaryButton } from '../../../components/ui/PrimaryButton';
+import { GlassCard } from '../../../components/ui/GlassCard';
+import { StatusBadge } from '../../../components/ui/StatusBadge';
+
 
 interface CartItem {
   productId: string;
@@ -32,8 +38,10 @@ interface CartItem {
   leadTimeDays: number;
 }
 
-const currency = (value: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+import { formatCurrency } from '../../../lib/format';
+
+const currency = formatCurrency;
+
 
 export default function CustomerCheckoutPage() {
   const router = useRouter();
@@ -395,14 +403,28 @@ export default function CustomerCheckoutPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
-          Review & Checkout
-        </h1>
-        <p className="text-slate-400 text-xs">
-          Secure your premium furniture order with dynamic shipping, billing and payment methods.
-        </p>
+      <div className="flex flex-col gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+            Review & Checkout
+          </h1>
+          <p className="text-slate-400 text-xs mt-1">
+            Secure your premium furniture order with dynamic shipping, billing and payment methods.
+          </p>
+        </div>
+
+        <GlassCard className="p-4 bg-slate-900/10 hover:translate-y-0" hoverable={false}>
+          <Stepper
+            steps={[
+              { label: 'Shopping Cart', description: 'Review cart items' },
+              { label: 'Address & Delivery', description: 'Destination details' },
+              { label: 'Secure Payment', description: 'Confirm purchase' }
+            ]}
+            currentStep={1}
+          />
+        </GlassCard>
       </div>
+
 
       {error && (
         <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
@@ -430,27 +452,24 @@ export default function CustomerCheckoutPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="text-xs text-slate-350 space-y-2">
-                <span className="font-semibold block">Contact Full Name</span>
-                <input
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-800 bg-[#090f1d] px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-sky-500"
-                  placeholder="Receiver's name"
-                  required
-                />
-              </label>
-              <label className="text-xs text-slate-350 space-y-2">
-                <span className="font-semibold block">Phone Number</span>
-                <input
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-800 bg-[#090f1d] px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-sky-500"
-                  placeholder="+91 99999 88888"
-                  required
-                />
-              </label>
+              <GlassInput
+                id="contactName"
+                label="Contact Full Name"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                placeholder="Receiver's name"
+                required
+              />
+              <GlassInput
+                id="contactPhone"
+                label="Phone Number"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+91 99999 88888"
+                required
+              />
             </div>
+
 
             <label className="block text-xs text-slate-350 space-y-2">
               <span className="font-semibold block">Delivery Address</span>
@@ -492,15 +511,14 @@ export default function CustomerCheckoutPage() {
 
             {!sameAsShipping && (
               <div className="space-y-4 animate-fade-in">
-                <label className="block text-xs text-slate-350 space-y-2">
-                  <span className="font-semibold block">Billing Name / Company</span>
-                  <input
-                    value={billingName}
-                    onChange={(e) => setBillingName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-800 bg-[#090f1d] px-3 py-2.5 text-xs text-slate-200 outline-none"
-                    placeholder="Billing name or registered firm"
-                  />
-                </label>
+                <GlassInput
+                  id="billingName"
+                  label="Billing Name / Company"
+                  value={billingName}
+                  onChange={(e) => setBillingName(e.target.value)}
+                  placeholder="Billing name or registered firm"
+                />
+
                 <label className="block text-xs text-slate-350 space-y-2">
                   <span className="font-semibold block">Billing Address</span>
                   <textarea
@@ -649,22 +667,27 @@ export default function CustomerCheckoutPage() {
             {/* Coupon Code Block */}
             <div className="border-t border-slate-900 pt-4 space-y-2">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono block">Apply Coupon</span>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="e.g. SHIV10"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  className="flex-1 rounded-xl border border-slate-800 bg-[#090f1d] px-3 py-2 text-xs uppercase font-mono text-slate-200 outline-none"
-                />
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <GlassInput
+                    id="couponCode"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="e.g. SHIV10"
+                    className="uppercase font-mono"
+                    aria-label="Coupon Code"
+                  />
+
+                </div>
                 <button
                   type="button"
                   onClick={handleApplyCoupon}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xxs font-bold cursor-pointer"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-350 hover:text-white rounded-xl text-xs font-bold transition duration-200 shrink-0"
                 >
                   Apply
                 </button>
               </div>
+
               {appliedCoupon && (
                 <div className="text-xxs text-emerald-450 font-bold font-mono">
                   Coupon Applied: {appliedCoupon}
@@ -739,17 +762,15 @@ export default function CustomerCheckoutPage() {
 
             {/* Place Order CTA */}
             <div className="flex flex-col gap-3">
-              <button
+              <PrimaryButton
                 type="submit"
-                disabled={checkingOut}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-3 text-xs font-extrabold text-white shadow-lg shadow-sky-500/10 hover:from-sky-600 hover:to-indigo-600 transition-all cursor-pointer disabled:opacity-50"
+                loading={checkingOut}
+                className="w-full text-xs uppercase tracking-wider py-3"
               >
-                {checkingOut ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> <span>Submitting draft...</span></>
-                ) : (
-                  <><span>Confirm Purchase Order</span><ArrowRight className="w-4 h-4" /></>
-                )}
-              </button>
+                <span>Confirm Purchase Order</span>
+                <ArrowRight className="w-4 h-4" />
+              </PrimaryButton>
+
               
               <Link 
                 href="/customer/cart" 

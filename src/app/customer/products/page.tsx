@@ -24,6 +24,18 @@ import {
   Eye
 } from 'lucide-react';
 
+
+import { PageHeader } from '../../../components/ui/PageHeader';
+import { SearchBar } from '../../../components/ui/SearchBar';
+import { GlassCard } from '../../../components/ui/GlassCard';
+import { StatusBadge } from '../../../components/ui/StatusBadge';
+import { PrimaryButton } from '../../../components/ui/PrimaryButton';
+import { GlassInput } from '../../../components/ui/GlassInput';
+import { ModernModal } from '../../../components/ui/ModernModal';
+import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Pagination } from '../../../components/ui/Pagination';
+
 interface Product {
   id: string;
   sku: string;
@@ -40,8 +52,10 @@ interface Product {
   leadTimeDays: number;
 }
 
-const currency = (value: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+import { formatCurrency } from '../../../lib/format';
+
+const currency = formatCurrency;
+
 
 export default function CustomerProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -346,46 +360,41 @@ export default function CustomerProductsPage() {
       )}
 
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
-            Finished Furniture Catalog
-          </h1>
-          <p className="text-slate-400 text-xs mt-1">
-            Browse our curated collection of premium hardwood tables, chairs, and custom furniture.
-          </p>
-        </div>
-
-        {/* View Mode & Compare Switch */}
-        <div className="flex items-center gap-3">
-          {compareList.length > 0 && (
-            <button
-              onClick={() => setShowCompareDrawer(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/25 border border-indigo-500/20 text-indigo-400 font-bold text-xxs transition-all cursor-pointer"
-            >
-              <Layers className="w-4 h-4" />
-              <span>Compare ({compareList.length})</span>
-            </button>
-          )}
-          
-          <div className="flex rounded-xl bg-slate-900 border border-slate-800 p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              title="Grid View"
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              title="List View"
-            >
-              <List className="w-4 h-4" />
-            </button>
+      <PageHeader
+        title="Finished Furniture Catalog"
+        description="Browse our curated collection of premium hardwood tables, chairs, and custom furniture."
+        actions={
+          <div className="flex items-center gap-3">
+            {compareList.length > 0 && (
+              <button
+                onClick={() => setShowCompareDrawer(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/25 border border-indigo-500/20 text-indigo-400 font-bold text-xxs transition-all cursor-pointer"
+              >
+                <Layers className="w-4 h-4" />
+                <span>Compare ({compareList.length})</span>
+              </button>
+            )}
+            
+            <div className="flex rounded-xl bg-slate-900 border border-slate-800 p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                title="Grid View"
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                title="List View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
+
 
       {/* Filters Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800/80 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
@@ -733,49 +742,36 @@ export default function CustomerProductsPage() {
       )}
 
       {/* Pagination Controls */}
-      {!loading && totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 pt-4">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((c) => c - 1)}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
-          >
-            Previous
-          </button>
-          <span className="text-xxs font-mono text-slate-400">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((c) => c + 1)}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
-          >
-            Next
-          </button>
-        </div>
+      {!loading && (
+        <Pagination
+          page={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredProducts.length}
+          pageSize={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       )}
 
-      {/* Specifications Details Dialog / Quick View */}
-      {selectedProduct && (() => {
-        const { rating, mrp, imgUrl, isOutofStock, estDeliveryFormatted } = getProductEnhancements(selectedProduct);
-        const galleryImages = [
-          imgUrl,
-          imgUrl,
-          imgUrl,
-        ];
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl bg-[#060913] rounded-3xl border border-slate-800/80 shadow-2xl relative overflow-hidden max-h-[90vh] flex flex-col">
-              
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 right-4 p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 transition-all cursor-pointer z-10"
-              >
-                <X className="w-4 h-4" />
-              </button>
 
-              <div className="overflow-y-auto p-6 sm:p-8 flex-1 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Specifications Details Dialog / Quick View */}
+      <ModernModal
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        title={selectedProduct?.name ?? 'Product Details'}
+        maxWidth="2xl"
+      >
+        {selectedProduct && (() => {
+          const { rating, mrp, imgUrl, isOutofStock, estDeliveryFormatted } = getProductEnhancements(selectedProduct);
+          const galleryImages = [
+            imgUrl,
+            imgUrl,
+            imgUrl,
+          ];
+          return (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+
                   {/* Left Column: Image & Gallery */}
                   <div className="space-y-4">
                     <div className="h-56 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center border border-slate-900 relative">
@@ -1041,10 +1037,9 @@ export default function CustomerProductsPage() {
                   )}
                 </div>
 
-              </div>
-
               {/* Footer buttons */}
-              <div className="flex justify-end gap-3 p-5 border-t border-slate-900 bg-slate-950/20">
+
+              <div className="flex justify-end gap-3 pt-5 border-t border-slate-800/80 bg-transparent mt-6">
                 <button
                   onClick={() => handleToggleWishlist(selectedProduct.id, selectedProduct.name)}
                   className={`px-4 py-2 rounded-xl font-bold text-xxs transition-colors border cursor-pointer ${
@@ -1070,10 +1065,12 @@ export default function CustomerProductsPage() {
                   <span>{includeBundle ? 'Add Bundle to Cart' : 'Add Item to Cart'}</span>
                 </button>
               </div>
-            </div>
-          </div>
-        );
-      })()}
+            </>
+          );
+        })()}
+      </ModernModal>
+
+
 
       {/* Product Specification Comparison Drawer */}
       {showCompareDrawer && compareList.length > 0 && (

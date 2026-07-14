@@ -21,8 +21,11 @@ interface Coupon {
   createdAt: string;
 }
 
-const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
-const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+import { formatCurrency, formatDate } from '../../lib/format';
+
+const fmt = formatCurrency;
+const fmtDate = (d?: string) => d ? formatDate(d) : '—';
+
 
 const emptyForm = {
   code: '', description: '', discountType: 'PERCENT', discountValue: '', minimumOrder: '',

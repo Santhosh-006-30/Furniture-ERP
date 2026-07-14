@@ -23,7 +23,10 @@ import {
   Tag,
   RotateCcw,
   BarChart2,
-  FileText
+  FileText,
+  Clock,
+  User as UserIcon,
+  ChevronRight
 } from 'lucide-react';
 
 interface LayoutWrapperProps {
@@ -45,7 +48,6 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   useEffect(() => {
     if (isCustomerRoute) return;
 
-    // Initialise auth cache
     const storedUser = localStorage.getItem('mini_erp_user');
     const storedToken = localStorage.getItem('mini_erp_token');
     if (storedUser && storedToken) {
@@ -97,30 +99,33 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     router.push('/login');
   };
 
+  // Simple Breadcrumbs calculation
+  const segments = pathname.split('/').filter(Boolean);
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[#060913] text-slate-100 font-sans">
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden bg-[#0a0f1d] text-slate-100 font-sans">
+      {/* Sidebar with Glassmorphism & transitions */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#090e1a] border-r border-slate-800/80 transition-transform duration-300 transform md:translate-x-0 md:static ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 glass-panel border-r border-slate-800/80 transition-transform duration-250 ease-in-out md:translate-x-0 md:static ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-[#0a0f1d]/40">
           {/* Logo Section */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800/80 bg-[#0d1426]/20">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800/50">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-sky-400" />
-              <span className="font-extrabold text-base tracking-wide bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+              <ShieldCheck className="w-5 h-5 text-blue-500" />
+              <span className="font-black text-sm tracking-widest bg-gradient-to-r from-blue-500 to-sky-400 bg-clip-text text-transparent">
                 SHIV FURNITURE
               </span>
             </Link>
-            <button onClick={toggleSidebar} className="p-1.5 rounded-lg md:hidden hover:bg-slate-800">
+            <button onClick={toggleSidebar} className="p-1.5 rounded-lg md:hidden hover:bg-slate-800/40" aria-label="Close sidebar">
               <X className="w-5 h-5 text-slate-400" />
             </button>
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+          <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
             {filteredMenuItems.map((item) => {
               const isActive = pathname === item.path;
               const Icon = item.icon;
@@ -128,9 +133,9 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold rounded-xl transition-all duration-200 ${
+                  className={`flex items-center gap-3 px-3.5 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 ${
                     isActive
-                      ? 'bg-sky-500/10 text-sky-400 border-l-4 border-sky-400 shadow-md shadow-sky-500/5'
+                      ? 'bg-blue-600/10 text-blue-400 border-l-2 border-blue-500 shadow-sm shadow-blue-600/5'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
                   }`}
                 >
@@ -141,24 +146,24 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
             })}
           </nav>
 
-          {/* User Section */}
-          <div className="p-4 border-t border-slate-800/80 bg-[#070b14]/50">
+          {/* User Profile Info section */}
+          <div className="p-4 border-t border-slate-800/50 bg-[#070b14]/30">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center font-bold text-xs uppercase shadow-inner text-white">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center font-bold text-xs uppercase shadow-inner text-white">
                 {user?.name?.slice(0, 2) || 'US'}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-slate-200 truncate">{user?.name || 'Loading...'}</p>
-                <span className="inline-block mt-0.5 px-2 py-0.5 text-[9px] font-bold font-mono tracking-wide rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 uppercase">
+                <span className="inline-block mt-0.5 px-1.5 py-0.5 text-[9px] font-black tracking-wide rounded bg-blue-500/10 text-blue-400 uppercase">
                   {user?.role || 'Guest'}
                 </span>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/10 hover:border-rose-500/20 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Log out</span>
             </button>
           </div>
@@ -167,34 +172,49 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center justify-between h-16 px-6 bg-[#090e1a]/60 backdrop-blur-md border-b border-slate-800/80 z-30">
+        {/* Top Header Navigation (Glassmorphic) */}
+        <header className="flex items-center justify-between h-16 px-6 glass-panel border-b border-slate-800/80 z-30 bg-[#0a0f1d]/40">
           <div className="flex items-center gap-4">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-400 transition-colors"
+              className="p-2 rounded-xl border border-slate-800 bg-[#0a0f1d]/40 hover:bg-slate-900/40 text-slate-400 transition-colors"
+              aria-label="Toggle sidebar"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             </button>
-            <div className="hidden sm:block">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest font-mono">
-                Control Center
-              </span>
+            
+            {/* Breadcrumb / Location */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+              <Link href="/dashboard" className="hover:text-slate-350 transition-colors">ERP</Link>
+              {segments.map((segment, idx) => (
+                <React.Fragment key={segment}>
+                  <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                  <span className={idx === segments.length - 1 ? 'text-slate-300 font-semibold' : ''}>
+                    {segment.charAt(0).toUpperCase() + segment.slice(1)}
+                  </span>
+                </React.Fragment>
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <span className="text-xxs text-slate-500 block font-mono">System Time</span>
-              <span className="text-xs font-bold text-slate-350 font-mono">
-                {new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+          <div className="flex items-center gap-6">
+            <div className="text-right hidden sm:flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-xs font-bold text-slate-400 font-mono">
+                {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
+            </div>
+            
+            {/* Profile badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-800/80 bg-slate-900/10 text-slate-300">
+              <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs font-semibold">{user?.name || 'Admin'}</span>
             </div>
           </div>
         </header>
 
-        {/* Page Children */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#060913]">
+        {/* Page Children Area */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#0a0f1d]">
           <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
             {children}
           </div>

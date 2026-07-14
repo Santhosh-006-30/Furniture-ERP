@@ -18,3 +18,11 @@ export const db =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
 export default db;
+
+// Bootstrap background scheduler (only once per process)
+if (typeof setInterval !== 'undefined') {
+  import('./scheduler').then(({ startScheduler }) => {
+    startScheduler();
+  }).catch(() => {});
+}
+

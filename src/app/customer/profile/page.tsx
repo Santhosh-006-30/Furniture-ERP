@@ -16,8 +16,10 @@ import {
 } from 'lucide-react';
 import api from '../../../lib/api-client';
 
-const currency = (value: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+import { formatCurrency } from '../../../lib/format';
+
+const currency = formatCurrency;
+
 
 export default function CustomerProfilePage() {
   const [loading, setLoading] = useState(true);

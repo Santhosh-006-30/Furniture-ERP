@@ -45,7 +45,10 @@ const RETURN_REASONS = [
   'Other',
 ];
 
-const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
+import { formatCurrency } from '../../../lib/format';
+
+const fmt = formatCurrency;
+
 
 export default function CustomerReturnsPage() {
   const router = useRouter();

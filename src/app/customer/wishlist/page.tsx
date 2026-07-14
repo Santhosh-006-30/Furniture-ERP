@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Heart, Trash2, ShoppingCart, Loader2, Search, ArrowRight, Star } from 'lucide-react';
 import api from '../../../lib/api-client';
+import { formatCurrency } from '../../../lib/format';
+
 
 interface Product {
   id: string;
@@ -216,8 +218,10 @@ export default function WishlistPage() {
 
                 <div className="flex justify-between items-baseline pt-1">
                   <span className="text-xs font-extrabold text-sky-400 font-mono">
-                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(item.product.sellingPrice)}
+                    {formatCurrency(item.product.sellingPrice)}
                   </span>
+
+
                   <span className="text-[9px] font-bold tracking-wide rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5">
                     {item.product.procurementStrategy}
                   </span>

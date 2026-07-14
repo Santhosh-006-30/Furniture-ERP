@@ -23,8 +23,10 @@ interface Product {
   leadTimeDays?: number | null;
 }
 
-const currency = (value: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+import { formatCurrency } from '../../../lib/format';
+
+const currency = formatCurrency;
+
 
 export default function ComparePage() {
   const router = useRouter();

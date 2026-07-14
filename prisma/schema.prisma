@@ -359,6 +359,9 @@ model Notification {
   message       String
   type          String
   isRead        Boolean   @default(false)
+  category      String    @default("GENERAL")
+  priority      String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  isArchived    Boolean   @default(false)
   createdAt     DateTime  @default(now())
   referenceId   String?
   referenceType String?
@@ -431,4 +434,32 @@ model ReturnRequest {
   refundedAt    DateTime?
 
   @@map("return_requests")
+}
+
+model ApiLog {
+  id           String   @id @default(uuid())
+  endpoint     String
+  method       String
+  statusCode   Int
+  responseTime Float    @default(0)
+  ip           String?
+  userAgent    String?
+  userId       String?
+  userName     String?
+  timestamp    DateTime @default(now())
+
+  @@map("api_logs")
+}
+
+model JobLog {
+  id           String    @id @default(uuid())
+  jobName      String    @unique
+  lastRunAt    DateTime?
+  nextRunAt    DateTime?
+  status       String    @default("IDLE") // IDLE, RUNNING, SUCCESS, FAILED
+  durationMs   Float?
+  errorMessage String?
+  updatedAt    DateTime  @updatedAt
+
+  @@map("job_logs")
 }
