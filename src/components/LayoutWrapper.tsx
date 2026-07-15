@@ -200,7 +200,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           <div className="flex items-center gap-6">
             <div className="text-right hidden sm:flex items-center gap-2">
               <Clock className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-xs font-bold text-slate-400 font-mono">
+              <span className="text-xs font-bold text-slate-400 font-mono" suppressHydrationWarning>
                 {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             </div>
