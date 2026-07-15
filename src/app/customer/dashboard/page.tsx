@@ -335,7 +335,7 @@ export default function CustomerDashboardPage() {
                     </span>
                     <p className="text-[10px] text-slate-400">{notif.message}</p>
                     <span className="text-[9px] text-slate-500 block font-mono">
-                      {new Date(notif.createdAt).toLocaleDateString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                      {new Date(notif.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                   </div>
                 </div>
