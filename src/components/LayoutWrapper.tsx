@@ -67,6 +67,21 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     }
   }, [pathname, isAuthPage, isCustomerRoute]);
 
+  // Listen for session-expiry events fired by the api-client on 401 responses
+  useEffect(() => {
+    function handleSessionExpired(e: Event) {
+      const isCustomer = (e as CustomEvent).detail?.customer;
+      clearAuth();
+      if (isCustomer) {
+        router.push('/customer/login');
+      } else {
+        router.push('/login');
+      }
+    }
+    window.addEventListener('erp:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('erp:session-expired', handleSessionExpired);
+  }, []);
+
   if (isAuthPage || isCustomerRoute) {
     return <>{children}</>;
   }

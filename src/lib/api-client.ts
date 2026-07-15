@@ -46,14 +46,13 @@ async function request(method: string, path: string, body?: any) {
       if (pathname.startsWith('/customer')) {
         localStorage.removeItem('customer_portal_token');
         localStorage.removeItem('customer_portal_user');
-        window.location.href = '/customer/login';
+        window.dispatchEvent(new CustomEvent('erp:session-expired', { detail: { customer: true } }));
       } else {
         localStorage.removeItem('mini_erp_token');
         localStorage.removeItem('mini_erp_user');
-        window.location.href = '/login';
+        window.dispatchEvent(new CustomEvent('erp:session-expired', { detail: { customer: false } }));
       }
-      // Throw a silent error so callers don't also display an error UI
-      throw new Error('Session expired. Redirecting to login...');
+      throw new Error('Session expired. Please log in again.');
     }
 
     const errText = await response.text();
