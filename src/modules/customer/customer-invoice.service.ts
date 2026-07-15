@@ -180,7 +180,7 @@ export class CustomerInvoiceService {
 
     const invoiceNumber = existingInvoiceLog?.newValues
       ? JSON.parse(existingInvoiceLog.newValues).invoiceNumber
-      : this.createInvoiceNumber();
+      : await this.createInvoiceNumber();
 
     if (!existingInvoiceLog) {
       const generatedInvoiceNumber = await this.createInvoiceNumber();
