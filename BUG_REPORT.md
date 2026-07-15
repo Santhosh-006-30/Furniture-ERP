@@ -1,21 +1,31 @@
 # Bug Report
 **Shiv Furniture Works Mini ERP — Release Candidate 1 (RC1)**
 
-This report summarizes bugs and issues identified during the final QA validation sweep.
+This report documents all defects discovered, analyzed, and resolved during the final validation audits.
 
 ---
 
 ## 1. Summary of Bug Inspections
-After complete E2E DOM-based browser validations and test runs:
-- **Reproducible Defects Found**: **0**
-- **Security Validation Flaws**: **0**
-- **UI Overflow & Alignment Faults**: **0**
-- **Hydration / Console Exceptions**: **0**
+- **Bugs Found**: 1
+- **Bugs Resolved**: 1
+- **Remaining Open Defects**: 0
 
 ---
 
-## 2. Statement of Verification
-No functional, security, responsive UI, or data integrity bugs were detected.
+## 2. Bug Registry
 
-> [!NOTE]
-> After complete DOM-based browser validation, no reproducible functional, UI, security, or workflow defects were found. The application is approved for Release Candidate (RC1).
+### Bug ID: BUG-001
+- **Severity**: High (UI/Navigation Block)
+- **Steps to Reproduce**:
+  1. Log in to the Admin ERP dashboard as `admin@shivfurniture.com`.
+  2. Navigate to the Customers list page (`/customers`).
+  3. Observe that the left sidebar navigation drawer and top header navigation bar are missing, leaving the page with no way to navigate back to the dashboard.
+- **Root Cause**: In `LayoutWrapper.tsx`, the route check `isCustomerRoute = pathname.startsWith('/customer')` matched `/customers` because `/customers` starts with `/customer`. This mistakenly categorized the admin customers page as a customer portal route, causing LayoutWrapper to return only the raw page children without the sidebar and header.
+- **Files Modified**: 
+  - [src/components/LayoutWrapper.tsx](file:///d:/Project/mini-erp/src/components/LayoutWrapper.tsx)
+- **Resolution**: Updated `isCustomerRoute` to verify exact route equality or subroute nesting:
+  ```typescript
+  const isCustomerRoute = pathname === '/customer' || pathname.startsWith('/customer/');
+  ```
+  This prevents false matching on the `/customers` path.
+- **Verification**: Verified that the Customers management page now displays the left sidebar, top header, breadcrumbs, and profile controls, rendering consistently with other dashboard pages (e.g. `/products`, `/sales`).

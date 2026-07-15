@@ -18,6 +18,7 @@ This document details results from the test suite runs.
 | **TC-007** | RBAC | Attempt unauthorized route accesses (Sales operator requesting Audit dashboard). | **PASS (403)** |
 | **TC-008** | Observability | Review `/admin/system` CPU metrics and Recharts activity tooltips. | **PASS** |
 | **TC-009** | Build Checks | Run `npx tsc --noEmit` and `npm run build` to verify bundles compiles. | **PASS** |
+| **TC-010** | Layout Wrapper | Verify `/customers` admin page displays standard left sidebar and topbar headers. | **PASS** |
 
 ---
 

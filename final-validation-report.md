@@ -10,8 +10,9 @@ This report summarizes the E2E verification of all system modules, roles, permis
 - **Customer Portal**: Account registrations, catalog searches, product wishlists, and item comparisons.
 - **Sales & Checkout**: Cart checkouts, shipping/delivery methods, COD/Razorpay payments, Sales Orders processing.
 - **Inventory & Procurement**: MTS/MTO stock reservations, low-stock PO draft generation, stock ledger recordings.
-- **Manufacturing**: multi-tier BOM calculations, MO transitions, and Work Center capacity checking.
+- **Manufacturing**: Multi-tier BOM calculations, MO transitions, and Work Center capacity checking.
 - **Observability & Logs**: Admin diagnostics `/admin/system`, JSON diff logs `/admin/audit`, background crons `/admin/jobs`.
+- **Customer Management Layout**: Verified that `/customers` displays within the standard `LayoutWrapper` sidebar and top header layouts.
 
 ---
 

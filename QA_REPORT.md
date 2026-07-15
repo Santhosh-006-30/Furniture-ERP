@@ -22,4 +22,4 @@ The following modules were audited using dynamic E2E browser validations:
 ---
 
 ## 3. Core QA Verdict
-All tested workflows succeeded cleanly with zero hydration issues, console exceptions, or unresolved database states.
+All tested workflows succeeded cleanly with zero hydration issues, console exceptions, or unresolved database states. The layout defect on `/customers` page (sidebar/navigation missing) was successfully identified, resolved, and verified.

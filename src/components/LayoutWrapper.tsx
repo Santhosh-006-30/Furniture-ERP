@@ -38,7 +38,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const router = useRouter();
   const { user, sidebarOpen, toggleSidebar, clearAuth, setAuth } = useStore();
 
-  const isCustomerRoute = pathname.startsWith('/customer');
+  const isCustomerRoute = pathname === '/customer' || pathname.startsWith('/customer/');
   const isAuthPage =
     pathname.includes('/login') ||
     pathname.includes('/register') ||
