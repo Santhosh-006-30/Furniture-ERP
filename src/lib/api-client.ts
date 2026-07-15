@@ -32,6 +32,22 @@ async function request(method: string, path: string, body?: any) {
   const response = await fetch(`${API_BASE}${path}`, config);
 
   if (!response.ok) {
+    // Handle expired / invalid token globally — redirect to the correct login page
+    if (response.status === 401 && typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/customer')) {
+        localStorage.removeItem('customer_portal_token');
+        localStorage.removeItem('customer_portal_user');
+        window.location.href = '/customer/login';
+      } else {
+        localStorage.removeItem('mini_erp_token');
+        localStorage.removeItem('mini_erp_user');
+        window.location.href = '/login';
+      }
+      // Throw a silent error so callers don't also display an error UI
+      throw new Error('Session expired. Redirecting to login...');
+    }
+
     const errText = await response.text();
     let errJson;
     try {
