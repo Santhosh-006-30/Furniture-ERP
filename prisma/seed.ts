@@ -1,9 +1,21 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Load .env so DATABASE_URL is available when running via `tsx prisma/seed.ts`
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const dbUrl = process.env.DATABASE_URL ?? 'file:./prisma/dev.db';
-const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+const isSqlite = dbUrl.startsWith('file:') || dbUrl.startsWith('sqlite:');
+const adapter = isSqlite
+  ? new PrismaBetterSqlite3({ url: dbUrl })
+  : new PrismaPg(new pg.Pool({ connectionString: dbUrl }));
 const db = new PrismaClient({ adapter });
 
 async function main() {
