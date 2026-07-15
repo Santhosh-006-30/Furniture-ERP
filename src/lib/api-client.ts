@@ -32,8 +32,16 @@ async function request(method: string, path: string, body?: any) {
   const response = await fetch(`${API_BASE}${path}`, config);
 
   if (!response.ok) {
-    // Handle expired / invalid token globally — redirect to the correct login page
-    if (response.status === 401 && typeof window !== 'undefined') {
+    // Handle expired / invalid token globally — redirect to the correct login page.
+    // BUT skip this for auth endpoints: 401 on login/register means wrong credentials,
+    // not a session expiry — the caller's catch block must handle it.
+    const isAuthEndpoint =
+      path.includes('/auth/login') ||
+      path.includes('/auth/register') ||
+      path.includes('/customer/login') ||
+      path.includes('/customer/register');
+
+    if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       if (pathname.startsWith('/customer')) {
         localStorage.removeItem('customer_portal_token');
