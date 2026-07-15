@@ -32,6 +32,19 @@ async function request(method: string, path: string, body?: any) {
   const response = await fetch(`${API_BASE}${path}`, config);
 
   if (!response.ok) {
+    // On 401, clear stale tokens and redirect to the appropriate login page
+    if (response.status === 401 && typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/customer')) {
+        localStorage.removeItem('customer_portal_token');
+        localStorage.removeItem('customer_portal_user');
+        window.location.href = '/customer/login';
+      } else {
+        localStorage.removeItem('mini_erp_token');
+        localStorage.removeItem('mini_erp_user');
+        window.location.href = '/session-expired';
+      }
+    }
     const errText = await response.text();
     let errJson;
     try {
