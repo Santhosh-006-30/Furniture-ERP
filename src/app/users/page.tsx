@@ -101,7 +101,11 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    if (currentUser?.role === 'ADMIN' || currentUser?.role === 'OWNER') {
+    // currentUser is null on first render while LayoutWrapper is hydrating auth
+    // from localStorage — wait until it is populated before making access decisions
+    if (currentUser === null) return;
+
+    if (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER') {
       fetchUsers();
     } else {
       setLoading(false);
