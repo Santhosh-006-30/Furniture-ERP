@@ -5,14 +5,15 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 // The db file lives in prisma/dev.db, so we override the path to be absolute-friendly
 const dbUrl = process.env.DATABASE_URL ?? 'file:./prisma/dev.db';
 
-const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+const isSqlite = dbUrl.startsWith('file:') || dbUrl.startsWith('sqlite:');
+const adapter = isSqlite ? new PrismaBetterSqlite3({ url: dbUrl }) : undefined;
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const db =
   globalForPrisma.prisma ||
   new PrismaClient({
-    adapter,
+    ...(adapter ? { adapter } : {}),
     log: ['warn', 'error'],
   });
 
