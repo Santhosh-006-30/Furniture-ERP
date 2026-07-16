@@ -3,7 +3,8 @@ const API_BASE = '/api';
 function getToken() {
   if (typeof window !== 'undefined') {
     const pathname = window.location.pathname;
-    if (pathname.startsWith('/customer')) {
+    const isCustomerPortalPath = pathname === '/customer' || pathname.startsWith('/customer/');
+    if (isCustomerPortalPath) {
       return localStorage.getItem('customer_portal_token');
     }
     return localStorage.getItem('mini_erp_token');
@@ -40,7 +41,10 @@ async function request(method: string, path: string, body?: any) {
 
     if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
       const pathname = window.location.pathname;
-      if (pathname.startsWith('/customer')) {
+      // Use '/customer/' with trailing slash so the admin '/customers' page
+      // does NOT get mistakenly treated as a customer portal route.
+      const isCustomerPortalPath = pathname === '/customer' || pathname.startsWith('/customer/');
+      if (isCustomerPortalPath) {
         localStorage.removeItem('customer_portal_token');
         localStorage.removeItem('customer_portal_user');
         window.dispatchEvent(new CustomEvent('erp:session-expired', { detail: { customer: true } }));

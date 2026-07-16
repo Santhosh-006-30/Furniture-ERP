@@ -5,7 +5,8 @@ import { db } from '../../lib/db';
 
 export class AuthService {
   static async register(email: string, password: string, name: string, role?: string) {
-    const existing = await UserRepository.findByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await UserRepository.findByEmail(normalizedEmail);
     if (existing) {
       throw new Error('Email already registered');
     }
@@ -14,7 +15,7 @@ export class AuthService {
     const hash = bcrypt.hashSync(password, salt);
 
     const user = await UserRepository.create({
-      email,
+      email: normalizedEmail,
       passwordHash: hash,
       name,
       role,
@@ -59,7 +60,8 @@ export class AuthService {
   }
 
   static async login(email: string, password: string) {
-    const user = await UserRepository.findByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await UserRepository.findByEmail(normalizedEmail);
     if (!user) {
       throw new Error('Invalid email or password');
     }

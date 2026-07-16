@@ -9,14 +9,16 @@ export class CustomerAuthController {
   static async register(req: Request) {
     try {
       const body = await req.json();
-      const { email, password, name, phone, address, companyName, gstNumber } = body;
+      const { email: rawEmail, password, name, phone, address, companyName, gstNumber } = body;
 
-      if (!email || !password || !name) {
+      if (!rawEmail || !password || !name) {
         return NextResponse.json(
           { error: 'Email, password, and name are required' },
           { status: 400 }
         );
       }
+
+      const email = rawEmail.trim().toLowerCase();
 
       // Check if user already exists
       const existingUser = await db.user.findUnique({
@@ -99,14 +101,16 @@ export class CustomerAuthController {
 
   static async login(req: Request) {
     try {
-      const { email, password } = await req.json();
+      const { email: rawEmail, password } = await req.json();
 
-      if (!email || !password) {
+      if (!rawEmail || !password) {
         return NextResponse.json(
           { error: 'Email and password are required' },
           { status: 400 }
         );
       }
+
+      const email = rawEmail.trim().toLowerCase();
 
       const user = await db.user.findUnique({
         where: { email },
@@ -157,14 +161,16 @@ export class CustomerAuthController {
 
   static async forgotPassword(req: Request) {
     try {
-      const { email, newPassword } = await req.json();
+      const { email: rawEmail, newPassword } = await req.json();
 
-      if (!email || !newPassword) {
+      if (!rawEmail || !newPassword) {
         return NextResponse.json(
           { error: 'Email and new password are required' },
           { status: 400 }
         );
       }
+
+      const email = rawEmail.trim().toLowerCase();
 
       const user = await db.user.findUnique({
         where: { email },
