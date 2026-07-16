@@ -3,11 +3,10 @@ const API_BASE = '/api';
 function getToken() {
   if (typeof window !== 'undefined') {
     const pathname = window.location.pathname;
-    const token = pathname.startsWith('/customer')
-      ? localStorage.getItem('customer_portal_token')
-      : localStorage.getItem('mini_erp_token');
-    console.log('[api-client] getToken():', { pathname, isCustomer: pathname.startsWith('/customer'), tokenPreview: token ? token.slice(0, 15) + '...' : 'none' });
-    return token;
+    if (pathname.startsWith('/customer')) {
+      return localStorage.getItem('customer_portal_token');
+    }
+    return localStorage.getItem('mini_erp_token');
   }
   return null;
 }
@@ -21,8 +20,6 @@ async function request(method: string, path: string, body?: any) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  console.log('[api-client] Sending request:', { method, path, hasToken: !!token, tokenPreview: token ? token.slice(0, 15) + '...' : 'none' });
-
   const config: RequestInit = {
     method,
     headers,
@@ -33,7 +30,6 @@ async function request(method: string, path: string, body?: any) {
   }
 
   const response = await fetch(`${API_BASE}${path}`, config);
-  console.log('[api-client] Response received:', { path, status: response.status, ok: response.ok });
 
   if (!response.ok) {
     const isAuthEndpoint =
@@ -43,7 +39,6 @@ async function request(method: string, path: string, body?: any) {
       path.includes('/customer/register');
 
     if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
-      console.warn('[api-client] Request returned 401 on non-auth endpoint. Dispatching session expiry.');
       const pathname = window.location.pathname;
       if (pathname.startsWith('/customer')) {
         localStorage.removeItem('customer_portal_token');
