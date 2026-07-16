@@ -53,6 +53,12 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
   }, []);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     if (isAuthPage) {
       setLoading(false);
       return;
@@ -186,6 +192,14 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
           </div>
         </div>
       </aside>
+
+      {/* Mobile Sidebar Overlay/Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden transition-opacity duration-250 cursor-pointer"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">

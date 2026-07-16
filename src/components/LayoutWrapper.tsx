@@ -36,7 +36,7 @@ interface LayoutWrapperProps {
 export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, sidebarOpen, toggleSidebar, clearAuth, setAuth } = useStore();
+  const { user, sidebarOpen, toggleSidebar, clearAuth, setAuth, setSidebar } = useStore();
 
   const isCustomerRoute = pathname === '/customer' || pathname.startsWith('/customer/');
   const isAuthPage =
@@ -44,6 +44,12 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     pathname.includes('/register') ||
     pathname.includes('/forgot-password') ||
     pathname.includes('/session-expired');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebar(false);
+    }
+  }, [pathname, setSidebar]);
 
   useEffect(() => {
     if (isCustomerRoute) return;
@@ -186,6 +192,14 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
         </div>
       </aside>
 
+      {/* Mobile Sidebar Overlay/Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden transition-opacity duration-250 cursor-pointer"
+          onClick={toggleSidebar}
+        />
+      )}
+
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Top Header Navigation (Glassmorphic) */}
@@ -193,7 +207,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           <div className="flex items-center gap-4">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-xl border border-slate-800 bg-[#0a0f1d]/40 hover:bg-slate-900/40 text-slate-400 transition-colors"
+              className="p-2 rounded-xl border border-slate-800 bg-[#0a0f1d]/40 hover:bg-slate-900/40 text-slate-400 transition-colors md:hidden"
               aria-label="Toggle sidebar"
             >
               <Menu className="w-4 h-4" />
