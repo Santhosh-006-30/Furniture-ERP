@@ -46,23 +46,34 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     pathname.includes('/session-expired');
 
   useEffect(() => {
-    if (isCustomerRoute) return;
+    console.log('[LayoutWrapper] Pathname changed:', pathname, '| isCustomerRoute:', isCustomerRoute, '| isAuthPage:', isAuthPage);
+    if (isCustomerRoute) {
+      console.log('[LayoutWrapper] Skipping auth check because this is a customer route');
+      return;
+    }
 
     const storedUser = localStorage.getItem('mini_erp_user');
     const storedToken = localStorage.getItem('mini_erp_token');
+    console.log('[LayoutWrapper] localStorage check:', { hasUser: !!storedUser, hasToken: !!storedToken });
+
     if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        console.log('[LayoutWrapper] Parsed stored user:', parsedUser);
         if (parsedUser.role === 'CUSTOMER') {
+          console.log('[LayoutWrapper] User is customer on admin layout. Redirecting to customer login.');
           clearAuth();
           router.push('/customer/login');
           return;
         }
+        console.log('[LayoutWrapper] Syncing auth state in Zustand for:', parsedUser.email);
         setAuth(parsedUser, storedToken);
       } catch (e) {
+        console.error('[LayoutWrapper] Error parsing stored user:', e);
         clearAuth();
       }
     } else if (!isAuthPage) {
+      console.log('[LayoutWrapper] No token found and not on auth page. Redirecting to /login.');
       router.push('/login');
     }
   }, [pathname, isAuthPage, isCustomerRoute]);
@@ -71,6 +82,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   useEffect(() => {
     function handleSessionExpired(e: Event) {
       const isCustomer = (e as CustomEvent).detail?.customer;
+      console.warn('[LayoutWrapper] Received session-expired event. Redirecting. IsCustomer:', isCustomer);
       clearAuth();
       if (isCustomer) {
         router.push('/customer/login');

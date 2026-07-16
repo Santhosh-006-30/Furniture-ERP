@@ -20,6 +20,8 @@ async function request(method: string, path: string, body?: any) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  console.log('[api-client] Sending request:', { method, path, hasToken: !!token, tokenPreview: token ? token.slice(0, 15) + '...' : 'none' });
+
   const config: RequestInit = {
     method,
     headers,
@@ -30,11 +32,9 @@ async function request(method: string, path: string, body?: any) {
   }
 
   const response = await fetch(`${API_BASE}${path}`, config);
+  console.log('[api-client] Response received:', { path, status: response.status, ok: response.ok });
 
   if (!response.ok) {
-    // Handle expired / invalid token globally — redirect to the correct login page.
-    // BUT skip this for auth endpoints: 401 on login/register means wrong credentials,
-    // not a session expiry — the caller's catch block must handle it.
     const isAuthEndpoint =
       path.includes('/auth/login') ||
       path.includes('/auth/register') ||
@@ -42,6 +42,7 @@ async function request(method: string, path: string, body?: any) {
       path.includes('/customer/register');
 
     if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
+      console.warn('[api-client] Request returned 401 on non-auth endpoint. Dispatching session expiry.');
       const pathname = window.location.pathname;
       if (pathname.startsWith('/customer')) {
         localStorage.removeItem('customer_portal_token');
