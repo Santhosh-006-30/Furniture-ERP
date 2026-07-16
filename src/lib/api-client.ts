@@ -3,10 +3,11 @@ const API_BASE = '/api';
 function getToken() {
   if (typeof window !== 'undefined') {
     const pathname = window.location.pathname;
-    if (pathname.startsWith('/customer')) {
-      return localStorage.getItem('customer_portal_token');
-    }
-    return localStorage.getItem('mini_erp_token');
+    const token = pathname.startsWith('/customer')
+      ? localStorage.getItem('customer_portal_token')
+      : localStorage.getItem('mini_erp_token');
+    console.log('[api-client] getToken():', { pathname, isCustomer: pathname.startsWith('/customer'), tokenPreview: token ? token.slice(0, 15) + '...' : 'none' });
+    return token;
   }
   return null;
 }
